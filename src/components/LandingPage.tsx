@@ -1,4 +1,5 @@
 import { useState, type FC, type ReactNode } from "react";
+import SequentialTypingList, { type SequentialTypingItem } from "./SequentialTypingList";
 
 /* ──────────────────────────────────────────────
    Inline SVG Icons (no external dependency)
@@ -198,6 +199,25 @@ const ROLES: RoleTabData[] = [
   },
 ];
 
+const FEATURE_ITEMS: SequentialTypingItem[] = [
+  {
+    icon: <BellIcon className="w-4 h-4 text-blue-300" />,
+    text: "Quick alerts within your district radius — stay informed the moment danger is detected nearby.",
+  },
+  {
+    icon: <TruckIcon className="w-4 h-4 text-blue-300" />,
+    text: "Transport option with full navigation to safe places — route guidance for evacuation vehicles.",
+  },
+  {
+    icon: <MapIcon className="w-4 h-4 text-blue-300" />,
+    text: "Interactive map with red/green markers for dangerous vs safe zones — see risk at a glance.",
+  },
+  {
+    icon: <BotIcon className="w-4 h-4 text-blue-300" />,
+    text: "AI chatbot that interacts with and guides users — real-time hazard awareness & relocation help.",
+  },
+];
+
 /* ══════════════════════════════════════════════
    Landing Page
    ══════════════════════════════════════════════ */
@@ -269,41 +289,8 @@ const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
               built for Wayanad, Kerala and scalable nationwide.
             </p>
 
-            {/* Feature highlights (moved from standalone section) */}
-            <div className="mt-6 lg:mt-8 space-y-4 max-w-lg">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
-                  <BellIcon className="w-4 h-4 text-blue-300" />
-                </span>
-                <p className="text-[13px] text-slate-300/90 leading-relaxed">
-                  Quick alerts within your district radius — stay informed the moment danger is detected nearby.
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
-                  <TruckIcon className="w-4 h-4 text-blue-300" />
-                </span>
-                <p className="text-[13px] text-slate-300/90 leading-relaxed">
-                  Transport option with full navigation to safe places — route guidance for evacuation vehicles.
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
-                  <MapIcon className="w-4 h-4 text-blue-300" />
-                </span>
-                <p className="text-[13px] text-slate-300/90 leading-relaxed">
-                  Interactive map with red/green markers for dangerous vs safe zones — see risk at a glance.
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
-                  <BotIcon className="w-4 h-4 text-blue-300" />
-                </span>
-                <p className="text-[13px] text-slate-300/90 leading-relaxed">
-                  AI chatbot that interacts with and guides users — real-time hazard awareness & relocation help.
-                </p>
-              </div>
-            </div>
+            {/* Feature highlights (animated with sequential typewriter effect) */}
+            <SequentialTypingList items={FEATURE_ITEMS} />
           </div>
         </div>
 
