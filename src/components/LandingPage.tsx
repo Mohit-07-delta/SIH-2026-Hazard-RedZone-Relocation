@@ -198,24 +198,6 @@ const ROLES: RoleTabData[] = [
   },
 ];
 
-/* ──────────────────────────────────────────────
-   Feature Highlight Item
-   ────────────────────────────────────────────── */
-
-interface FeatureItemProps {
-  icon: ReactNode;
-  text: string;
-}
-
-const FeatureItem: FC<FeatureItemProps> = ({ icon, text }) => (
-  <div className="flex items-start gap-4 rounded-xl bg-white border border-slate-200 p-5 shadow-sm">
-    <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-700">
-      {icon}
-    </span>
-    <p className="text-sm text-slate-700 leading-relaxed">{text}</p>
-  </div>
-);
-
 /* ══════════════════════════════════════════════
    Landing Page
    ══════════════════════════════════════════════ */
@@ -281,11 +263,47 @@ const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
             </p>
 
             {/* Supporting paragraph */}
-            <p className="mt-4 max-w-lg text-sm sm:text-base text-slate-300/90 leading-relaxed">
+            <p className="mt-3 max-w-lg text-[13px] sm:text-sm text-slate-300/80 leading-relaxed">
               A unified platform for identifying hazard red zones, mapping safe
               relocation sites, and coordinating disaster-response logistics —
               built for Wayanad, Kerala and scalable nationwide.
             </p>
+
+            {/* Feature highlights (moved from standalone section) */}
+            <div className="mt-6 lg:mt-8 space-y-4 max-w-lg">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
+                  <BellIcon className="w-4 h-4 text-blue-300" />
+                </span>
+                <p className="text-[13px] text-slate-300/90 leading-relaxed">
+                  Quick alerts within your district radius — stay informed the moment danger is detected nearby.
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
+                  <TruckIcon className="w-4 h-4 text-blue-300" />
+                </span>
+                <p className="text-[13px] text-slate-300/90 leading-relaxed">
+                  Transport option with full navigation to safe places — route guidance for evacuation vehicles.
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
+                  <MapIcon className="w-4 h-4 text-blue-300" />
+                </span>
+                <p className="text-[13px] text-slate-300/90 leading-relaxed">
+                  Interactive map with red/green markers for dangerous vs safe zones — see risk at a glance.
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
+                  <BotIcon className="w-4 h-4 text-blue-300" />
+                </span>
+                <p className="text-[13px] text-slate-300/90 leading-relaxed">
+                  AI chatbot that interacts with and guides users — real-time hazard awareness & relocation help.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -359,32 +377,6 @@ const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
               — Landslide Hazard
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* ── Unique Options (unchanged) ────────── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-slate-800 mb-10">
-          Unique Options We Have
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <FeatureItem
-            icon={<BellIcon className="w-5 h-5" />}
-            text="Quick alerts within your district radius — stay informed the moment danger is detected nearby."
-          />
-          <FeatureItem
-            icon={<TruckIcon className="w-5 h-5" />}
-            text="Transport option with full navigation to safe places — route guidance for evacuation vehicles."
-          />
-          <FeatureItem
-            icon={<MapIcon className="w-5 h-5" />}
-            text="Interactive map with red/green markers for dangerous vs safe zones — see risk at a glance."
-          />
-          <FeatureItem
-            icon={<BotIcon className="w-5 h-5" />}
-            text="AI chatbot that interacts with and guides users — real-time hazard awareness & relocation help."
-          />
         </div>
       </section>
 
