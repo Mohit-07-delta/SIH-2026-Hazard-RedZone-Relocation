@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safety Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+  :root{
+    --red:#ef3b3b;
+    --red-dark:#dc2f2f;
+    --green:#22a559;
+    --bg:#f5f6f8;
+    --card:#ffffff;
+    --text:#1c2230;
+    --muted:#8890a0;
+    --border:#eef0f3;
+    --orange:#f59e0b;
+    --blue:#2f6fed;
+    --purple:#7c5cf0;
+    --radius:16px;
+    --shadow:0 4px 18px rgba(20,20,43,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .app{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    min-height:100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar{
+    background:#fff;
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding-bottom:20px;
+  }
+  .sidebar-header{
+    background:linear-gradient(180deg,var(--red),var(--red-dark));
+    color:#fff;
+    padding:28px 20px 34px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .shield-icon{
+    width:44px;height:44px;
+    border:2px solid rgba(255,255,255,0.85);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+  }
+  .sidebar-header h1{
+    font-size:15px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:.2px;
+  }
+  nav{
+    flex:1;
+    padding:14px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    border-radius:10px;
+    color:#5b6274;
+    text-decoration:none;
+    font-size:14.5px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .nav-item .ic{width:20px;text-align:center;font-size:16px;}
+  .nav-item:hover{background:#f7f8fa;}
+  .nav-item.active{
+    background:#fdeceb;
+    color:var(--red);
+    font-weight:700;
+  }
+  .emergency-box{
+    margin:16px 14px 0;
+    background:#fff5f4;
+    border:1px solid #fbdcda;
+    border-radius:14px;
+    padding:16px;
+  }
+  .emergency-box .tag{
+    font-size:11px;
+    font-weight:700;
+    color:var(--red);
+    letter-spacing:.4px;
+    margin-bottom:8px;
+  }
+  .emergency-box .call-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .call-btn{
+    width:38px;height:38px;
+    background:var(--red);
+    color:#fff;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;
+    flex-shrink:0;
+  }
+  .emergency-box .num{font-size:24px;font-weight:800;line-height:1;}
+  .emergency-box .label{font-size:12.5px;color:#6b7280;margin-top:8px;}
+  .avail{
+    display:flex;align-items:center;gap:6px;
+    margin-top:8px;font-size:12px;color:var(--green);font-weight:600;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;}
+
+  /* MAIN */
+  main{padding:26px 32px 40px;}
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:22px;
+  }
+  .menu-icon{font-size:20px;margin-right:16px;color:#333;cursor:pointer;}
+  .welcome-row{display:flex;align-items:center;gap:14px;}
+  .welcome-text .hi{font-size:14px;color:#6b7280;margin:0;}
+  .welcome-text h2{margin:2px 0 0;font-size:24px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .top-right{display:flex;align-items:center;gap:20px;}
+  .bell-wrap{position:relative;font-size:20px;cursor:pointer;}
+  .bell-badge{
+    position:absolute;top:-8px;right:-10px;
+    background:var(--red);color:#fff;
+    font-size:11px;font-weight:700;
+    border-radius:10px;
+    padding:1px 6px;
+    border:2px solid #fff;
+  }
+  .avatar{
+    width:44px;height:44px;border-radius:50%;
+    background:linear-gradient(135deg,#cbd5e1,#94a3b8);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:15px;
+    overflow:hidden;
+  }
+
+  /* GRID TOP CARDS */
+  .stat-row{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr 1fr;
+    gap:18px;
+    margin-bottom:18px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--border);
+    padding:20px;
+  }
+  .safe-card{
+    background:linear-gradient(180deg,#eefaf1,#f6fdf8);
+    border:1px solid #dff2e4;
+    text-align:center;
+    padding:26px 20px 20px;
+    position:relative;
+    overflow:hidden;
+  }
+  .safe-badge{
+    width:78px;height:78px;
+    border-radius:50%;
+    background:#fff;
+    border:2px solid #cdeed9;
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 14px;
+    font-size:34px;
+    color:var(--green);
+  }
+  .safe-card .you-are{font-size:13px;letter-spacing:1.5px;color:var(--green);font-weight:700;}
+  .safe-card .safe-word{font-size:36px;font-weight:800;color:var(--green);margin:2px 0 6px;letter-spacing:1px;}
+  .safe-card .sub{font-size:13px;color:#5f7a68;}
+
+  .info-card{display:flex;flex-direction:column;gap:10px;}
+  .info-top{display:flex;align-items:flex-start;gap:12px;}
+  .info-icon{
+    width:44px;height:44px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:19px;flex-shrink:0;
+  }
+  .info-icon.loc{background:#fdeaea;color:var(--red);}
+  .info-icon.weather{background:#e8f1fe;color:var(--blue);}
+  .info-icon.risk{background:#fff3e0;color:var(--orange);}
+  .info-label{font-size:13px;color:var(--muted);margin:0 0 2px;}
+  .info-value{font-size:20px;font-weight:800;margin:0;}
+  .info-sub{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .btn-red{
+    background:var(--red);
+    color:#fff;border:none;
+    padding:9px 14px;
+    border-radius:9px;
+    font-size:13px;font-weight:700;
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:6px;
+    width:fit-content;
+  }
+  .btn-outline{
+    background:#fff;
+    color:var(--red);
+    border:1px solid #eee;
+    padding:9px 14px;
+    border-radius:9px;
+    font-size:13px;font-weight:700;
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:6px;
+    width:fit-content;
+    box-shadow:0 2px 6px rgba(0,0,0,0.04);
+  }
+  .risk-ring-wrap{position:relative;width:44px;height:44px;flex-shrink:0;}
+  .risk-value{font-size:20px;font-weight:800;color:var(--orange);}
+
+  /* ALERT BANNER */
+  .alert-banner{
+    background:linear-gradient(90deg,#fdeceb,#fff5f4);
+    border:1px solid #fbdcda;
+    border-radius:var(--radius);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 26px;
+    margin-bottom:18px;
+  }
+  .alert-left{display:flex;align-items:center;gap:16px;}
+  .alert-icon{font-size:26px;color:var(--red);}
+  .alert-left h3{margin:0;font-size:16px;font-weight:800;color:#c22b2b;}
+  .alert-left p{margin:2px 0 0;font-size:13px;color:#8a5555;}
+  .alert-mid{font-size:26px;opacity:.5;}
+
+  /* BOTTOM 3-COL */
+  .main-row{
+    display:grid;
+    grid-template-columns:1.7fr 1fr 1fr;
+    gap:18px;
+    margin-bottom:18px;
+    align-items:start;
+  }
+  .panel-title{
+    display:flex;align-items:center;justify-content:between;
+    font-weight:800;font-size:15px;margin-bottom:14px;
+  }
+  .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .live-dot{color:var(--green);font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;}
+
+  .map-wrap{
+    position:relative;
+    height:340px;
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid #eef0f3;
+    background:#eef1ea;
+  }
+  #leafletMap{
+    width:100%;
+    height:100%;
+  }
+  .map-wrap.loading::after{
+    content:"Loading map…";
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#eef1ea;
+    color:#8890a0;
+    font-size:13px;
+    z-index:5;
+  }
+  .pin-emoji{
+    width:30px;height:30px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;color:#fff;
+    box-shadow:0 3px 8px rgba(0,0,0,0.25);
+    border:2px solid #fff;
+  }
+  .pin-safe{background:var(--green);}
+  .pin-shelter{background:var(--blue);}
+  .pin-hospital{background:var(--red);}
+  .pin-warn{background:var(--orange);}
+  .pin-user{
+    background:#2f6fed;
+    width:36px;height:36px;
+    box-shadow:0 0 0 8px rgba(47,111,237,0.18),0 3px 8px rgba(0,0,0,0.25);
+    font-size:16px;
+  }
+  .map-controls{
+    position:absolute;right:12px;bottom:14px;
+    display:flex;flex-direction:column;gap:6px;
+    z-index:400;
+  }
+  .map-controls button{
+    width:32px;height:32px;background:#fff;border:1px solid #e5e7eb;
+    border-radius:8px;font-size:16px;cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.12);
+  }
+  .map-controls button:hover{background:#f7f8fa;}
+  .leaflet-control-attribution{font-size:9px !important;}
+  .map-legend{
+    display:flex;flex-wrap:wrap;gap:14px;
+    margin-top:12px;font-size:12px;color:#6b7280;
+  }
+  .map-legend span{display:flex;align-items:center;gap:6px;}
+  .legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  .quick-list{display:flex;flex-direction:column;gap:4px;}
+  .quick-item{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 4px;
+    border-bottom:1px solid #f2f3f5;
+    cursor:pointer;
+  }
+  .quick-item:last-of-type{border-bottom:none;}
+  .q-icon{
+    width:38px;height:38px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex-shrink:0;color:#fff;
+  }
+  .q-safe{background:var(--green);}
+  .q-hospital{background:var(--red);}
+  .q-loc{background:var(--blue);}
+  .q-shelter{background:var(--purple);}
+  .q-text b{display:block;font-size:14px;}
+  .q-text span{font-size:12px;color:var(--muted);}
+  .q-arrow{margin-left:auto;color:#c8ccd4;}
+  .view-all-btn{
+    width:100%;
+    margin-top:10px;
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #f3d4d2;
+    background:#fff;
+    color:var(--red);
+    font-weight:700;
+    font-size:13.5px;
+    cursor:pointer;
+  }
+
+  .chat-card{display:flex;flex-direction:column;height:100%;}
+  .bot-msg{
+    display:flex;gap:10px;
+    background:#f7f8fa;
+    padding:12px;border-radius:12px;
+    margin-bottom:14px;
+  }
+  .bot-avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(135deg,#3a3f4a,#20232b);
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex-shrink:0;
+  }
+  .bot-msg p{margin:0;font-size:13.5px;line-height:1.4;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .chip{
+    border:1px solid #e5e7eb;
+    background:#fff;
+    border-radius:20px;
+    padding:8px 14px;
+    font-size:12.5px;
+    cursor:pointer;
+    color:#374151;
+  }
+  .chip:hover{background:#f7f8fa;}
+  .chat-input-row{
+    margin-top:auto;
+    display:flex;gap:8px;
+    align-items:center;
+  }
+  .chat-input-row input{
+    flex:1;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:11px 14px;
+    font-size:13px;
+    outline:none;
+  }
+  .send-btn{
+    width:40px;height:40px;
+    background:var(--red);
+    border:none;color:#fff;
+    border-radius:10px;
+    font-size:16px;cursor:pointer;
+    flex-shrink:0;
+  }
+
+  /* BOTTOM STATS */
+  .stats-strip{
+    background:#fff;
+    border-radius:var(--radius);
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    padding:22px 10px;
+  }
+  .stat-block{
+    display:flex;align-items:center;gap:12px;
+    padding:0 18px;
+    border-right:1px solid #f0f1f3;
+  }
+  .stat-block:last-child{border-right:none;}
+  .stat-icon{
+    width:46px;height:46px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:19px;flex-shrink:0;
+  }
+  .si-1{background:#fdeceb;color:var(--red);}
+  .si-2{background:#e8f7ee;color:var(--green);}
+  .si-3{background:#e8f1fe;color:var(--blue);}
+  .si-4{background:#f1ecfd;color:var(--purple);}
+  .si-5{background:#fdeceb;color:var(--red);}
+  .stat-block h4{margin:0;font-size:20px;font-weight:800;}
+  .stat-block p{margin:1px 0 0;font-size:12px;color:var(--muted);}
+  .stat-block.together{gap:16px;}
+  .stat-block.together h4{font-size:14.5px;}
+  .stat-block.together p{font-size:12px;}
+
+  @media (max-width:1200px){
+    .stat-row{grid-template-columns:1fr 1fr;}
+    .main-row{grid-template-columns:1fr;}
+    .stats-strip{grid-template-columns:repeat(2,1fr);}
+    .stat-block{border-right:none;border-bottom:1px solid #f0f1f3;padding:14px 10px;}
+  }
+  @media (max-width:800px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="shield-icon">🛡️</div>
+      <h1>User Page</h1>
+    </div>
+    <nav>
+      <a href="#top" class="nav-item active"><span class="ic">🏠</span> Dashboard</a>
+      <a href="#quickAccess" class="nav-item"><span class="ic">🛡️</span> Safe Places</a>
+      <a href="#alertBanner" class="nav-item"><span class="ic">🔔</span> Alerts</a>
+      <a href="https://en.wikipedia.org/wiki/Family" target="_blank" rel="noopener" class="nav-item"><span class="ic">👨‍👩‍👧</span> My Family</a>
+      <a href="https://www.ndma.gov.in/" target="_blank" rel="noopener" class="nav-item"><span class="ic">📘</span> Resources</a>
+      <a href="#" class="nav-item"><span class="ic">⚙️</span> Settings</a>
+    </nav>
+    <div class="emergency-box">
+      <div class="tag">IN AN EMERGENCY?</div>
+      <div class="call-row">
+        <a class="call-btn" href="tel:112" title="Call 112" style="text-decoration:none;">📞</a>
+        <a class="num" href="tel:112" style="color:inherit;text-decoration:none;">112</a>
+      </div>
+      <div class="label">Emergency Call</div>
+      <div class="avail"><span class="dot"></span> Available 24/7</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="top">
+    <div class="topbar">
+      <div class="welcome-row">
+        <span class="menu-icon">☰</span>
+        <div class="welcome-text">
+          <p class="hi">Welcome back,</p>
+          <h2 id="userName">Satyam <span>👋</span></h2>
+        </div>
+      </div>
+      <div class="top-right">
+        <div class="bell-wrap" onclick="alert('13 new alerts')">
+          🔔<span class="bell-badge">13</span>
+        </div>
+        <div class="avatar">S</div>
+      </div>
+    </div>
+
+    <!-- TOP STAT CARDS -->
+    <div class="stat-row">
+      <div class="card safe-card">
+        <div class="safe-badge">🛡️</div>
+        <div class="you-are">YOU ARE</div>
+        <div class="safe-word">SAFE</div>
+        <div class="sub">Stay alert, stay safe!</div>
+      </div>
+
+      <div class="card info-card">
+        <div class="info-top">
+          <div class="info-icon loc">📍</div>
+          <div>
+            <p class="info-label">Current Location</p>
+            <p class="info-value">Vidisha</p>
+            <p class="info-sub">Madhya Pradesh, India</p>
+          </div>
+        </div>
+        <a class="btn-red" href="https://www.google.com/maps/search/?api=1&query=Vidisha,Madhya+Pradesh,India" target="_blank" rel="noopener" style="text-decoration:none;">View on Map ›</a>
+      </div>
+
+      <div class="card info-card">
+        <div class="info-top">
+          <div class="info-icon weather">🌧️</div>
+          <div>
+            <p class="info-label">Weather Status</p>
+            <p class="info-value">27°C</p>
+            <p class="info-sub">Light Rain</p>
+            <p class="info-sub">Humidity 68%</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card info-card">
+        <div class="info-top">
+          <div class="info-icon risk">
+            <svg width="30" height="30" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="15" fill="none" stroke="#f3e3d0" stroke-width="4"/>
+              <circle cx="18" cy="18" r="15" fill="none" stroke="#f59e0b" stroke-width="4"
+                stroke-dasharray="70 30" stroke-linecap="round" transform="rotate(-90 18 18)"/>
+            </svg>
+          </div>
+          <div>
+            <p class="info-label">Risk Level</p>
+            <p class="info-value" style="color:var(--orange)">Moderate</p>
+            <p class="info-sub">Stay informed</p>
+          </div>
+        </div>
+        <a class="btn-outline" href="https://sachet.ndma.gov.in/" target="_blank" rel="noopener" style="text-decoration:none;">Details ›</a>
+      </div>
+    </div>
+
+    <!-- ALERT BANNER -->
+    <div class="alert-banner" id="alertBanner">
+      <div class="alert-left">
+        <div class="alert-icon">⚠️</div>
+        <div>
+          <h3>Report an Alert</h3>
+          <p>Help us keep our community safe</p>
+        </div>
+      </div>
+      <div class="alert-mid">🚨</div>
+      <a class="btn-red" style="margin:0;text-decoration:none;" href="mailto:alerts@safetydashboard.example?subject=New%20Safety%20Alert&body=Location%3A%20Vidisha%2C%20Madhya%20Pradesh%0ADescription%3A%20">Report Now ›</a>
+    </div>
+
+    <!-- MAIN ROW: MAP / QUICK ACCESS / CHAT -->
+    <div class="main-row">
+
+      <div class="card">
+        <div class="panel-header">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;">
+            <span class="dot" style="background:var(--green);"></span> Live Safety Map
+          </div>
+          <div class="live-dot"><span class="dot"></span> Live</div>
+        </div>
+        <div class="map-wrap loading" id="mapWrap">
+          <div id="leafletMap"></div>
+          <div class="map-controls">
+            <button onclick="zoom(1)" title="Zoom in">+</button>
+            <button onclick="zoom(-1)" title="Zoom out">−</button>
+            <button onclick="locate()" title="Find my location">◎</button>
+          </div>
+        </div>
+        <div class="map-legend">
+          <span><span class="legend-dot" style="background:#2f6fed;"></span> Your Location</span>
+          <span><span class="legend-dot" style="background:var(--green);"></span> Safe Place</span>
+          <span><span class="legend-dot" style="background:var(--blue);"></span> Shelter</span>
+          <span><span class="legend-dot" style="background:var(--red);"></span> Hospital</span>
+          <span><span class="legend-dot" style="background:var(--red);"></span> Red Zone</span>
+        </div>
+      </div>
+
+      <div class="card" id="quickAccess">
+        <div class="panel-header"><div style="font-weight:800;font-size:15px;">Quick Access</div></div>
+        <div class="quick-list">
+          <a class="quick-item" href="https://www.google.com/maps/search/?api=1&query=safe+places+near+Vidisha" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+            <div class="q-icon q-safe">🛡️</div>
+            <div class="q-text"><b>Safe Places</b><span>Nearest secure locations</span></div>
+            <span class="q-arrow">›</span>
+          </a>
+          <a class="quick-item" href="https://www.google.com/maps/search/?api=1&query=hospitals+near+Vidisha" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+            <div class="q-icon q-hospital">H</div>
+            <div class="q-text"><b>Nearby Hospitals</b><span>Medical assistance near you</span></div>
+            <span class="q-arrow">›</span>
+          </a>
+          <a class="quick-item" href="#" onclick="locate();return false;" style="text-decoration:none;color:inherit;">
+            <div class="q-icon q-loc">📍</div>
+            <div class="q-text"><b>My Location</b><span>Share your live location</span></div>
+            <span class="q-arrow">›</span>
+          </a>
+          <a class="quick-item" href="https://www.google.com/maps/search/?api=1&query=shelters+near+Vidisha" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+            <div class="q-icon q-shelter">🏠</div>
+            <div class="q-text"><b>Shelters</b><span>Find nearby shelters</span></div>
+            <span class="q-arrow">›</span>
+          </a>
+        </div>
+        <a class="view-all-btn" href="https://www.google.com/maps/search/?api=1&query=Vidisha,Madhya+Pradesh,India" target="_blank" rel="noopener" style="text-decoration:none;display:block;text-align:center;">View All on Map</a>
+      </div>
+
+      <div class="card chat-card">
+        <div class="panel-header"><div style="font-weight:800;font-size:15px;">Chat With Bot</div></div>
+        <div class="bot-msg">
+          <div class="bot-avatar">🤖</div>
+          <p>Hi Satyam! 👋<br>How can I help you stay safe today?</p>
+        </div>
+        <div class="chip-row">
+          <button class="chip" onclick="sendChip('Nearby safe places')">Nearby safe places</button>
+          <button class="chip" onclick="sendChip('Weather update')">Weather update</button>
+          <button class="chip" onclick="sendChip('Emergency contact')">Emergency contact</button>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Type something...">
+          <button class="send-btn" onclick="sendMsg()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM STATS -->
+    <div class="stats-strip">
+      <div class="stat-block">
+        <div class="stat-icon si-1">🔔</div>
+        <div><h4>3</h4><p>Active Alerts</p><p>In your area</p></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-icon si-2">🛡️</div>
+        <div><h4>12</h4><p>Safe Places Nearby</p><p>Within 5 km</p></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-icon si-3">🏠</div>
+        <div><h4>8</h4><p>Shelters Available</p><p>Open now</p></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-icon si-4">👨‍👩‍👧</div>
+        <div><h4>4,582</h4><p>People Protected</p><p>In your zone</p></div>
+      </div>
+      <div class="stat-block together">
+        <div class="stat-icon si-5">🛡️</div>
+        <div><h4>Together, we build<br>a safer tomorrow.</h4><p>Stay alert. Stay alive. 🤍</p></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  // ---------- REAL MAP (Leaflet + OpenStreetMap) ----------
+  const VIDISHA = [23.5251, 77.8121];
+
+  const places = [
+    { type:'safe',    name:'Community Safe Point – Station Road', coords:[23.5285, 77.8065] },
+    { type:'shelter',  name:'Govt. Relief Shelter – Civil Lines',  coords:[23.5320, 77.8145] },
+    { type:'warn',     name:'Reported Flood-Risk Zone',            coords:[23.5350, 77.8200] },
+    { type:'hospital', name:'District Hospital, Vidisha',          coords:[23.5220, 77.8260] },
+    { type:'hospital', name:'City Care Hospital',                  coords:[23.5175, 77.7995] },
+    { type:'safe',     name:'Safe Point – Bus Stand',              coords:[23.5210, 77.8095] },
+    { type:'shelter',  name:'Community Shelter – Sanchi Road',     coords:[23.5165, 77.8180] },
+    { type:'safe',     name:'Safe Point – Udayagiri Chowk',        coords:[23.5145, 77.8140] },
+  ];
+
+  const pinConfig = {
+    safe:     { cls:'pin-safe',     icon:'🛡️' },
+    shelter:  { cls:'pin-shelter',  icon:'🏠' },
+    hospital: { cls:'pin-hospital', icon:'H'  },
+    warn:     { cls:'pin-warn',     icon:'⚠️' },
+  };
+
+  let map, userMarker;
+
+  function makeDivIcon(cls, icon, size){
+    size = size || 30;
+    return L.divIcon({
+      className:'',
+      html:`<div class="pin-emoji ${cls}" style="width:${size}px;height:${size}px;">${icon}</div>`,
+      iconSize:[size,size],
+      iconAnchor:[size/2,size/2],
+      popupAnchor:[0,-size/2]
+    });
+  }
+
+  function initMap(){
+    map = L.map('leafletMap', { zoomControl:false, attributionControl:true }).setView(VIDISHA, 14);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // "You are here" marker
+    userMarker = L.marker(VIDISHA, { icon: makeDivIcon('pin-user','📍',36) })
+      .addTo(map)
+      .bindPopup('<b>You are here</b><br>Vidisha, Madhya Pradesh');
+
+    // Place markers
+    places.forEach(p=>{
+      const cfg = pinConfig[p.type];
+      const marker = L.marker(p.coords, { icon: makeDivIcon(cfg.cls, cfg.icon) }).addTo(map);
+      const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ' Vidisha');
+      marker.bindPopup(`<b>${p.name}</b><br><a href="${mapsUrl}" target="_blank" rel="noopener">Open in Google Maps ›</a>`);
+    });
+
+    document.getElementById('mapWrap').classList.remove('loading');
+  }
+
+  function zoom(dir){
+    if(!map) return;
+    if(dir > 0) map.zoomIn(); else map.zoomOut();
+  }
+
+  function locate(){
+    if(!navigator.geolocation){
+      alert('Geolocation is not supported by this browser.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      function(pos){
+        const coords = [pos.coords.latitude, pos.coords.longitude];
+        map.setView(coords, 15);
+        userMarker.setLatLng(coords).bindPopup('<b>You are here</b>').openPopup();
+      },
+      function(err){
+        alert('Could not get your location (' + err.message + '). Showing default location instead.');
+        map.setView(VIDISHA, 14);
+      }
+    );
+  }
+
+  window.addEventListener('DOMContentLoaded', initMap);
+</script>
+<script>
+  // ---------- CHAT BOT ----------
+  function sendChip(text){
+    addMsg(text, true);
+    setTimeout(()=>addMsg(botReply(text), false), 500);
+  }
+  function addMsg(text, isUser){
+    const chatBox = document.querySelector('.chat-card');
+    const msg = document.createElement('div');
+    msg.className = 'bot-msg';
+    if(isUser){
+      msg.style.background = '#fdeceb';
+      msg.style.flexDirection = 'row-reverse';
+      msg.style.textAlign = 'right';
+      msg.innerHTML = '<div class="bot-avatar" style="background:#eee;">🙋</div><p>'+escapeHtml(text)+'</p>';
+    } else {
+      msg.innerHTML = '<div class="bot-avatar">🤖</div><p>'+escapeHtml(text)+'</p>';
+    }
+    chatBox.insertBefore(msg, chatBox.querySelector('.chip-row'));
+    msg.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.innerText = str;
+    return d.innerHTML;
+  }
+  function botReply(text){
+    const t = text.toLowerCase();
+    if(t.includes('safe') && t.includes('place')) return 'There are 12 safe places within 5 km. Check the Quick Access panel or the map for exact locations.';
+    if(t.includes('weather')) return "It's 27°C with light rain in Vidisha right now, humidity at 68%.";
+    if(t.includes('emergency') || t.includes('contact')) return 'Tap the red 112 button in the sidebar to call emergency services immediately, available 24/7.';
+    if(t.includes('hospital')) return 'The nearest hospitals are marked with a red "H" on the Live Safety Map — tap one to open directions.';
+    if(t.includes('shelter')) return 'There are 8 shelters open right now. They are marked in blue on the map.';
+    return "Got it — I've noted that. For anything urgent, please call 112 right away.";
+  }
+  function sendMsg(){
+    const input = document.getElementById('chatInput');
+    if(!input.value.trim()) return;
+    sendChip(input.value.trim());
+    input.value='';
+  }
+  document.getElementById('chatInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') sendMsg();
+  });
+</script>
+</body>
+</html>
