@@ -1,5 +1,5 @@
 import { useState, type FC, type ReactNode } from "react";
-import SequentialTypingList, { type SequentialTypingItem } from "./SequentialTypingList";
+import RotatingFeatureLine, { type RotatingFeatureItem } from "./RotatingFeatureLine";
 
 /* ──────────────────────────────────────────────
    Inline SVG Icons (no external dependency)
@@ -199,7 +199,7 @@ const ROLES: RoleTabData[] = [
   },
 ];
 
-const FEATURE_ITEMS: SequentialTypingItem[] = [
+const FEATURE_ITEMS: RotatingFeatureItem[] = [
   {
     icon: <BellIcon className="w-4 h-4 text-blue-300" />,
     text: "Quick alerts within your district radius — stay informed the moment danger is detected nearby.",
@@ -289,8 +289,8 @@ const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
               built for Wayanad, Kerala and scalable nationwide.
             </p>
 
-            {/* Feature highlights (animated with sequential typewriter effect) */}
-            <SequentialTypingList items={FEATURE_ITEMS} />
+            {/* Feature highlights (single rotating typewriter slot) */}
+            <RotatingFeatureLine items={FEATURE_ITEMS} />
           </div>
         </div>
 
