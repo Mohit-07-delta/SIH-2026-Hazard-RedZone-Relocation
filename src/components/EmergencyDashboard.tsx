@@ -1,4 +1,4 @@
-import { useState, type FC } from "react";
+import React, { useState, type FC } from "react";
 
 /* ──────────────────────────────────────────────
    Inline SVG Icons
@@ -54,7 +54,7 @@ const RadioIcon = (c?: string) =>
 
 interface NavItem {
   label: string;
-  icon: (c?: string) => JSX.Element;
+  icon: (c?: string) => React.ReactNode;
   badge?: number;
 }
 
@@ -75,7 +75,7 @@ const NAV_ITEMS: NavItem[] = [
 
 interface QuickActionProps {
   iconBg: string;
-  iconEl: JSX.Element;
+  iconEl: React.ReactNode;
   title: string;
   description: string;
 }
@@ -104,7 +104,7 @@ const QuickAction: FC<QuickActionProps> = ({ iconBg, iconEl, title, description 
 
 interface InfoTipProps {
   color: string;
-  iconEl: JSX.Element;
+  iconEl: React.ReactNode;
   title: string;
   description: string;
 }
