@@ -20,10 +20,10 @@ type Phase = "typing" | "pausing" | "erasing" | "switching";
 
 export const RotatingFeatureLine: FC<RotatingFeatureLineProps> = ({
   items,
-  typeSpeedMs = 28,
-  eraseSpeedMs = 16,
-  pauseMs = 1800,
-  switchDelayMs = 180,
+  typeSpeedMs = 22,
+  eraseSpeedMs = 8,
+  pauseMs = 1000,
+  switchDelayMs = 150,
   className = "mt-6 lg:mt-8 max-w-lg min-h-[56px] sm:min-h-[48px] flex items-start gap-3",
   iconContainerClassName = "mt-0.5 shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15 transition-all duration-300",
   textClassName = "text-[13px] text-slate-300/90 leading-relaxed min-h-[2.5em] flex-1",
