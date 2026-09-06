@@ -199,9 +199,18 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           `}
         >
           {/* Header */}
-          <div className="bg-gradient-to-b from-[#ef3b3b] to-[#dc2f2f] text-white p-6 pb-7 flex flex-col gap-2.5">
-            <div className="w-11 h-11 border-2 border-white/80 rounded-full flex items-center justify-center text-xl">
-              🛡️
+          <div className="bg-gradient-to-b from-[#0f52ba] to-[#0a3d8c] text-white p-6 pb-7 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between w-full">
+              <button
+                onClick={onBack}
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-base cursor-pointer transition-colors"
+                title="Back to Landing Page"
+              >
+                ←
+              </button>
+              <div className="w-10 h-10 border-2 border-white/80 rounded-full flex items-center justify-center text-xl">
+                🛡️
+              </div>
             </div>
             <h1 className="text-base font-bold tracking-tight m-0">User Page</h1>
             <p className="text-xs text-white/80 -mt-1 m-0">Safety &amp; Relocation Portal</p>
@@ -216,7 +225,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               }}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
                 activeTab === "Dashboard"
-                  ? "bg-[#fdeceb] text-[#ef3b3b]"
+                  ? "bg-[#e8f1fe] text-[#0f52ba]"
                   : "text-[#5b6274] hover:bg-[#f7f8fa]"
               }`}
             >
@@ -231,7 +240,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               }}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
                 activeTab === "Safe Places"
-                  ? "bg-[#fdeceb] text-[#ef3b3b]"
+                  ? "bg-[#e8f1fe] text-[#0f52ba]"
                   : "text-[#5b6274] hover:bg-[#f7f8fa]"
               }`}
             >
@@ -246,7 +255,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               }}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
                 activeTab === "Alerts"
-                  ? "bg-[#fdeceb] text-[#ef3b3b]"
+                  ? "bg-[#e8f1fe] text-[#0f52ba]"
                   : "text-[#5b6274] hover:bg-[#f7f8fa]"
               }`}
             >
@@ -278,7 +287,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
             <div className="pt-2 border-t border-[#eef0f3] mt-2">
               <button
                 onClick={onBack}
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-[#ef3b3b] hover:bg-[#fdeceb] cursor-pointer transition-colors"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-[#0f52ba] hover:bg-[#e8f1fe] cursor-pointer transition-colors"
               >
                 <span className="w-5 text-center text-base">⬅️</span>
                 <span>Back to Home</span>
@@ -287,14 +296,14 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </nav>
 
           {/* Emergency Helpline Box */}
-          <div className="mx-3.5 bg-[#fff5f4] border border-[#fbdcda] rounded-2xl p-4">
-            <div className="text-[11px] font-bold text-[#ef3b3b] tracking-wide mb-2">
+          <div className="mx-3.5 bg-[#f0f5ff] border border-[#d6e4ff] rounded-2xl p-4">
+            <div className="text-[11px] font-bold text-[#0f52ba] tracking-wide mb-2">
               IN AN EMERGENCY?
             </div>
             <div className="flex items-center gap-3">
               <a
                 href="tel:112"
-                className="w-9 h-9 bg-[#ef3b3b] text-white rounded-full flex items-center justify-center text-sm shrink-0"
+                className="w-9 h-9 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white rounded-full flex items-center justify-center text-sm shrink-0 transition-colors"
               >
                 📞
               </a>
@@ -383,7 +392,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                 href="https://www.google.com/maps/search/?api=1&query=Vidisha,Madhya+Pradesh,India"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ef3b3b] text-white text-xs font-bold rounded-lg w-fit mt-3"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white text-xs font-bold rounded-lg w-fit mt-3 transition-colors"
               >
                 View on Map ›
               </a>
@@ -433,7 +442,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                 href="https://sachet.ndma.gov.in/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#eef0f3] text-[#ef3b3b] text-xs font-bold rounded-lg w-fit mt-3 shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#d6e4ff] text-[#0f52ba] text-xs font-bold rounded-lg w-fit mt-3 shadow-xs hover:bg-[#f0f5ff] transition-colors"
               >
                 Details ›
               </a>
@@ -441,14 +450,14 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
 
           {/* ── ALERT BANNER ───────────────────────── */}
-          <div className="bg-gradient-to-r from-[#fdeceb] to-[#fff5f4] border border-[#fbdcda] rounded-2xl p-4 sm:p-5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="bg-gradient-to-r from-[#f0f5ff] to-[#f8faff] border border-[#d6e4ff] rounded-2xl p-4 sm:p-5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="text-2xl text-[#ef3b3b]">⚠️</div>
+              <div className="text-2xl text-[#0f52ba]">⚠️</div>
               <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-[#c22b2b] m-0">
+                <h3 className="text-sm sm:text-base font-extrabold text-[#0f52ba] m-0">
                   Report an Alert
                 </h3>
-                <p className="text-xs text-[#8a5555] m-0 mt-0.5">
+                <p className="text-xs text-[#5b6274] m-0 mt-0.5">
                   Help us keep our community safe
                 </p>
               </div>
@@ -457,7 +466,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               <span className="text-2xl opacity-60 hidden sm:inline">🚨</span>
               <a
                 href="mailto:alerts@surakshasetu.gov.in?subject=New%20Safety%20Alert&body=Location%3A%20Vidisha%2C%20Madhya%20Pradesh%0ADescription%3A%20"
-                className="px-4 py-2 bg-[#ef3b3b] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xs"
+                className="px-4 py-2 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xs transition-colors"
               >
                 Report Now ›
               </a>
@@ -608,7 +617,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                 href="https://www.google.com/maps/search/?api=1&query=Vidisha,Madhya+Pradesh,India"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full mt-4 py-2 rounded-xl border border-[#f3d4d2] bg-white text-[#ef3b3b] font-bold text-xs text-center hover:bg-[#fff5f4] transition-colors block"
+                className="w-full mt-4 py-2 rounded-xl border border-[#d6e4ff] bg-white text-[#0f52ba] font-bold text-xs text-center hover:bg-[#f0f5ff] transition-colors block"
               >
                 View All on Map
               </a>
@@ -625,7 +634,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                     key={m.id}
                     className={`flex gap-2 p-2.5 rounded-xl text-xs leading-relaxed ${
                       m.isUser
-                        ? "bg-[#fdeceb] text-[#1c2230] flex-row-reverse text-right"
+                        ? "bg-[#e8f1fe] text-[#1c2230] flex-row-reverse text-right"
                         : "bg-[#f7f8fa] text-[#1c2230]"
                     }`}
                   >
@@ -665,11 +674,11 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                     if (e.key === "Enter") handleSendChat(chatInput);
                   }}
                   placeholder="Type something..."
-                  className="flex-1 border border-[#e5e7eb] rounded-xl px-3 py-2 text-xs outline-none focus:border-[#ef3b3b]"
+                  className="flex-1 border border-[#e5e7eb] rounded-xl px-3 py-2 text-xs outline-none focus:border-[#0f52ba]"
                 />
                 <button
                   onClick={() => handleSendChat(chatInput)}
-                  className="w-8 h-8 bg-[#ef3b3b] hover:bg-[#dc2f2f] text-white rounded-xl flex items-center justify-center text-xs cursor-pointer transition-colors"
+                  className="w-8 h-8 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white rounded-xl flex items-center justify-center text-xs cursor-pointer transition-colors"
                 >
                   ➤
                 </button>
