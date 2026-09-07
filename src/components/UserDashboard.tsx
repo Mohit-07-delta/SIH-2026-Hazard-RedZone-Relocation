@@ -327,10 +327,137 @@ Emergency 112
       </div>
     </div>
   </div>
-) : (
-  
+) : activeNav === "Safe Places" ? (  
 
         <div className="p-4 space-y-4 max-w-7xl mx-auto">
+
+  <h2 className="text-2xl font-bold text-slate-900">
+    Safe Places
+  </h2>
+
+  <p className="text-sm text-slate-500">
+    Nearby safe shelters and evacuation locations
+  </p>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+      <h3 className="font-bold text-slate-800">
+        Meppadi Relief Shelter
+      </h3>
+
+      <p className="text-sm text-slate-500 mt-1">
+        1.8 km away
+      </p>
+
+      <span className="inline-block mt-3 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">
+        SAFE
+      </span>
+
+      <button
+        onClick={() => alert("Directions feature coming soon")}
+        className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold"
+      >
+        Get Directions
+      </button>
+    </div>
+
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+      <h3 className="font-bold text-slate-800">
+        Government High School Shelter
+      </h3>
+
+      <p className="text-sm text-slate-500 mt-1">
+        3.2 km away
+      </p>
+
+      <span className="inline-block mt-3 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">
+        SAFE
+      </span>
+
+      <button
+        onClick={() => alert("Directions feature coming soon")}
+        className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold"
+      >
+        Get Directions
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+) : activeNav === "Alerts" ? (
+    <div className="p-4 space-y-4 max-w-7xl mx-auto">
+
+  <div>
+    <h2 className="text-2xl font-bold text-slate-900">
+      Active Alerts
+    </h2>
+
+    <p className="text-sm text-slate-500 mt-1">
+      Current disaster alerts in your area
+    </p>
+  </div>
+
+  <div className="space-y-3">
+
+    {ALERTS.map((item, index) => (
+      <div
+        key={index}
+        className="bg-white rounded-xl border border-slate-200 shadow-sm p-5"
+      >
+
+        <div className="flex items-start justify-between gap-4">
+
+          <div className="flex items-start gap-3">
+
+            <div className="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+              <Icon name="warning" size={20} />
+            </div>
+
+            <div>
+              <h3 className="font-bold text-slate-800">
+                {item.type}
+              </h3>
+
+              <p className="text-sm text-slate-500 mt-1">
+                {item.distance} away · {item.time}
+              </p>
+            </div>
+
+          </div>
+
+          <SeverityBadge level={item.severity} />
+
+        </div>
+
+        <div className="mt-4 flex gap-2">
+
+          <button
+            onClick={() => alert("Alert details coming soon")}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+          >
+            View Details
+          </button>
+
+          <button
+            onClick={() => alert("Evacuation route coming soon")}
+            className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50"
+          >
+            Evacuation Route
+          </button>
+
+        </div>
+
+      </div>
+    ))}
+
+  </div>
+
+</div>
+
+) : (
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
