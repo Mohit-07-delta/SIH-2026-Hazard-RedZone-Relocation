@@ -1,6 +1,49 @@
-import { useState, useRef, type FC } from "react";
+import { useState, useRef, type FC, type ReactNode, type FormEvent } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+const Icon = ({
+  name,
+  size = 18,
+}: {
+  name: string;
+  size?: number;
+}) => {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  const paths: Record<string, ReactNode> = {
+    home: <><path d="m3 10 9-7 9 7" /><path d="M5 10v10h14V10" /><path d="M9 20v-6h6v6" /></>,
+    shield: <><path d="M12 3 4 6v5c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z" /><path d="m9 12 2 2 4-4" /></>,
+    bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
+    warning: <><path d="m12 3 9 18H3L12 3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,
+    bus: <><path d="M5 16h14" /><path d="M6 16V5h12v11" /><path d="M6 9h12" /><circle cx="8" cy="18" r="1.5" /><circle cx="16" cy="18" r="1.5" /></>,
+    family: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2" /><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5" /><path d="M14 15c3 0 5 2 5 5" /></>,
+    book: <><path d="M4 5a2 2 0 0 1 2-2h13v17H6a2 2 0 0 0-2 2V5Z" /><path d="M4 19c0-1.1.9-2 2-2h13" /></>,
+    simulation: <><path d="M12 3a9 9 0 1 0 9 9" /><path d="M12 7v5l3 2" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-2.5V20a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 8 15a1.7 1.7 0 0 0-1.6-1H6v-2.5h.4A1.7 1.7 0 0 0 8 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h2.5V5a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v2.5h-.2a1.7 1.7 0 0 0-1.6 1Z" /></>,
+    location: <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
+    rain: <><path d="M17 18H7a5 5 0 1 1 1-9.9A6 6 0 0 1 19 11a4 4 0 0 1-2 7Z" /><path d="M8 21l1-2M12 21l1-2M16 21l1-2" /></>,
+    map: <><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" /><path d="M9 3v15M15 6v15" /></>,
+    alert: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M12 22v-1" /></>,
+    route: <><circle cx="5" cy="19" r="2" /><circle cx="19" cy="5" r="2" /><path d="M7 19c7 0 3-10 10-10" /></>,
+    report: <><path d="M4 4h16v16H4z" /><path d="M8 8h8M8 12h8M8 16h5" /></>,
+    ai: <><rect x="4" y="5" width="16" height="14" rx="3" /><path d="M8 10h.01M16 10h.01M8 14c2 1.5 6 1.5 8 0" /></>,
+    camera: <><path d="M4 7h3l2-2h6l2 2h3v12H4V7Z" /><circle cx="12" cy="13" r="3" /></>,
+    phone: <><path d="M6 3h4l2 5-2 2c1 2 2 3 4 4l2-2 5 2v4c0 1-1 2-2 2C10 20 4 14 4 5c0-1 1-2 2-2Z" /></>,
+    menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
+  };
+
+  return <svg {...common}>{paths[name] ?? paths.settings}</svg>;
+};
+
 interface Props {
   onBack: () => void;
 }
@@ -48,24 +91,23 @@ const FAMILY: FamilyMember[] = [
 ];
 
 const NAV_ITEMS = [
-  { label: "Dashboard", icon: "🏠" },
-  { label: "Safe Places", icon: "🛡️" },
-  { label: "Alerts", icon: "🔔" },
-  { label: "Risk Areas", icon: "⚠️" },
-  { label: "Relocation", icon: "🚌" },
-  { label: "My Family", icon: "👨‍👩‍👧" },
-  { label: "Resources", icon: "📚" },
-  { label: "Disaster Simulation", icon: "🌀" },
-  { label: "Settings", icon: "⚙️" },
+  { label: "Dashboard", icon: "home" },
+  { label: "Safe Places", icon: "shield" },
+  { label: "Alerts", icon: "bell" },
+  { label: "Risk Areas", icon: "warning" },
+  { label: "Relocation", icon: "bus" },
+  { label: "My Family", icon: "family" },
+  { label: "Resources", icon: "book" },
+  { label: "Disaster Simulation", icon: "simulation" },
+  { label: "Settings", icon: "settings" },
 ];
-
 const MAP_FILTERS = ["All", "Hazards", "Safe Sites", "Shelters", "Hospitals"];
 
 const RESOURCES = [
-  { icon: "📋", label: "NDMA Evacuation Guidelines" },
-  { icon: "🗺️", label: "Wayanad District Hazard Map" },
-  { icon: "🏥", label: "Nearby Medical Facilities" },
-  { icon: "📞", label: "Emergency Contact Directory" },
+  { icon: "report", label: "NDMA Evacuation Guidelines" },
+  { icon: "map", label: "Wayanad District Hazard Map" },
+  { icon: "shield", label: "Nearby Medical Facilities" },
+  { icon: "phone", label: "Emergency Contact Directory" },
 ];
 
 // ─── Helper: severity badge ───────────────────────────────────────────────────
@@ -126,7 +168,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }
 
-  function submitReport(e: React.FormEvent) {
+  function submitReport(e: FormEvent) {
     e.preventDefault();
     setReportSubmitted(true);
     setTimeout(() => setReportSubmitted(false), 3000);
@@ -147,10 +189,9 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           <button
             key={item.label}
             onClick={() => {
-              if (item.label !== "Dashboard") console.log(`Navigate to: ${item.label}`);
-              setActiveNav(item.label);
-              setSidebarOpen(false);
-            }}
+  setActiveNav(item.label);
+  setSidebarOpen(false);
+}}
             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors
               ${
                 activeNav === item.label
@@ -158,7 +199,9 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                   : "text-slate-300 hover:bg-slate-700 hover:text-white"
               }`}
           >
-            <span className="text-base">{item.icon}</span>
+            <span className="w-5 flex justify-center">
+  <Icon name={item.icon} size={18} />
+</span>
             {item.label}
           </button>
         ))}
@@ -169,7 +212,8 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           href="tel:112"
           className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-700 text-white font-bold text-sm py-2.5 rounded-lg transition-colors"
         >
-          📞 Emergency 112
+          <Icon name="phone" size={16} />
+Emergency 112
         </a>
         <button
           onClick={onBack}
@@ -184,7 +228,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
       {/* ── Desktop sidebar (always visible, part of flex flow) ── */}
-      <aside className="hidden lg:flex flex-col w-52 flex-shrink-0 bg-slate-900 h-full">
+      <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 bg-slate-900 h-full">
         {SidebarContent}
       </aside>
 
@@ -196,7 +240,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-52 bg-slate-900 flex flex-col lg:hidden
+        className={`fixed inset-y-0 left-0 z-40 w-60 bg-slate-900 flex flex-col lg:hidden
           transform transition-transform duration-200
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
@@ -206,13 +250,13 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button
-            className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100"
-            onClick={() => setSidebarOpen(true)}
-          >
-            ☰
-          </button>
+  className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100"
+  onClick={() => setSidebarOpen(true)}
+>
+  <Icon name="menu" size={20} />
+</button>
           <div className="flex-1">
-            <h1 className="text-base font-bold text-slate-800">Dashboard</h1>
+            <h1 className="text-base font-bold text-slate-800">{activeNav}</h1>
             <p className="text-xs text-slate-500">Wayanad District, Kerala — Live Hazard View</p>
           </div>
           <div className="flex items-center gap-2">
@@ -225,6 +269,66 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
             </div>
           </div>
         </header>
+        {activeNav === "Settings" ? (
+  <div className="p-4 max-w-4xl mx-auto">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <h2 className="text-lg font-bold text-slate-800 mb-1">
+        Settings
+      </h2>
+
+      <p className="text-sm text-slate-500 mb-6">
+        Manage your SurakshaSetu preferences
+      </p>
+
+      <div className="space-y-5">
+
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              Emergency Notifications
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Receive alerts about nearby hazards and emergencies.
+            </p>
+          </div>
+
+          <button className="bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold">
+            ON
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              Location Sharing
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Allow SurakshaSetu to use your location for safety recommendations.
+            </p>
+          </div>
+
+          <button className="bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold">
+            ON
+          </button>
+        </div>
+
+        <div>
+          <label className="text-sm font-semibold text-slate-800">
+            Language
+          </label>
+
+          <select className="mt-2 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            <option>English</option>
+            <option>Hindi</option>
+            <option>Malayalam</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+  </div>
+) : (
+  
 
         <div className="p-4 space-y-4 max-w-7xl mx-auto">
 
@@ -556,7 +660,9 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                 {RESOURCES.map((r, i) => (
                   <li key={i}>
                     <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left">
-                      <span className="text-xl">{r.icon}</span>
+                      <span className="w-5 flex justify-center">
+  <Icon name={r.icon} size={18} />
+</span>
                       <span className="text-sm text-slate-700 font-medium">{r.label}</span>
                       <span className="ml-auto text-slate-300 text-sm">›</span>
                     </button>
@@ -589,8 +695,10 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
 
           <div className="h-4" />
         </div>
+)}
       </main>
     </div>
+
   );
 };
 
