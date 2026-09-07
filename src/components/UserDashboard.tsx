@@ -1,4 +1,4 @@
-﻿import { useState, useRef, type FC } from "react";
+import { useState, useRef, type FC } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -134,15 +134,9 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
     setReportDesc("");
   }
 
-  const Sidebar = (
-    <aside
-      className={`
-        fixed inset-y-0 left-0 z-40 w-52 bg-slate-900 flex flex-col
-        transform transition-transform duration-200
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:static lg:translate-x-0 lg:flex
-      `}
-    >
+  // Reusable sidebar inner content
+  const SidebarContent = (
+    <>
       <div className="px-4 py-5 border-b border-slate-700">
         <div className="text-white font-extrabold text-lg leading-tight">SurakshaSetu</div>
         <div className="text-slate-400 text-xs mt-0.5">Hazard Safety Platform</div>
@@ -184,19 +178,30 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           Back to Home
         </button>
       </div>
-    </aside>
+    </>
   );
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
+      {/* ── Desktop sidebar (always visible, part of flex flow) ── */}
+      <aside className="hidden lg:flex flex-col w-52 flex-shrink-0 bg-slate-900 h-full">
+        {SidebarContent}
+      </aside>
+
+      {/* ── Mobile sidebar (fixed overlay, toggled by hamburger) ── */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {Sidebar}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-52 bg-slate-900 flex flex-col lg:hidden
+          transform transition-transform duration-200
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        {SidebarContent}
+      </aside>
 
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
