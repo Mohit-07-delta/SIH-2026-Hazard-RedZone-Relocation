@@ -267,6 +267,69 @@ const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
   const [adminPassword, setAdminPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // User Phone + OTP state
+  const [userPhone, setUserPhone] = useState("");
+  const [userOtp, setUserOtp] = useState(["", "", "", ""]);
+  const [otpSent, setOtpSent] = useState(false);
+  const [userRememberMe, setUserRememberMe] = useState(false);
+  const [otpError, setOtpError] = useState("");
+
+  const handleSendOtp = () => {
+    if (userPhone.trim().length < 10) {
+      setOtpError("Please enter a valid 10-digit mobile number");
+      return;
+    }
+    setOtpError("");
+    setOtpSent(true);
+  };
+
+  const handleOtpChange = (index: number, val: string) => {
+    if (val.length > 1) {
+      const digits = val.replace(/\D/g, "").slice(0, 4).split("");
+      const newOtp = [...userOtp];
+      digits.forEach((d, i) => {
+        newOtp[i] = d;
+      });
+      setUserOtp(newOtp);
+      const nextInput = document.getElementById(`user-otp-${Math.min(digits.length - 1, 3)}`);
+      nextInput?.focus();
+      return;
+    }
+    const digit = val.replace(/\D/g, "");
+    const newOtp = [...userOtp];
+    newOtp[index] = digit;
+    setUserOtp(newOtp);
+
+    if (digit && index < 3) {
+      const nextInput = document.getElementById(`user-otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !userOtp[index] && index > 0) {
+      const prevInput = document.getElementById(`user-otp-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const handleUserLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userPhone.trim().length < 10) {
+      setOtpError("Please enter a valid 10-digit mobile number");
+      return;
+    }
+    const fullOtp = userOtp.join("");
+    if (fullOtp.length < 4) {
+      setOtpError("Please enter the 4-digit OTP (Demo: 1234)");
+      return;
+    }
+    setOtpError("");
+    console.log("user login", { phone: userPhone, otp: fullOtp, rememberMe: userRememberMe });
+    onNavigate?.("user");
+  };
+
   const active = ROLES.find((r) => r.key === activeRole)!;
 
   return (
@@ -433,6 +496,115 @@ const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
                 <button
                   type="submit"
                   className="w-full py-3.5 mt-2 rounded-full bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-sm shadow-md hover:shadow-lg cursor-pointer transition-all duration-200"
+                >
+                  Login
+                </button>
+              </form>
+            ) : activeRole === "user" ? (
+              <form onSubmit={handleUserLogin} className="space-y-4 mb-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                    Enter Mobile Number
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="px-3 py-3 rounded-lg bg-slate-100 text-slate-700 font-semibold text-sm select-none">
+                      +91
+                    </div>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={userPhone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        setUserPhone(val);
+                        if (otpError) setOtpError("");
+                        if (val.length === 10 && !otpSent) {
+                          setOtpSent(true);
+                        }
+                      }}
+                      placeholder="Enter 10-digit number"
+                      className="flex-1 px-4 py-3 rounded-lg bg-slate-100 text-slate-800 text-sm placeholder:text-slate-400 outline-none border border-transparent focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      className={`px-3 py-3 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                        otpSent
+                          ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                      }`}
+                    >
+                      {otpSent ? "Resend" : "Get OTP"}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-medium text-slate-500">
+                      Enter 4-Digit OTP
+                    </label>
+                    {otpSent && (
+                      <span className="text-[11px] text-green-600 font-medium">
+                        OTP Sent (Demo: 1234)
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2.5">
+                    {userOtp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        id={`user-otp-${idx}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        placeholder="—"
+                        className="w-12 h-12 text-center text-lg font-bold rounded-lg bg-slate-100 text-slate-800 placeholder:text-slate-400 outline-none border border-transparent focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {otpError && (
+                  <p className="text-xs text-red-500 font-medium">{otpError}</p>
+                )}
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="userRememberMe"
+                      checked={userRememberMe}
+                      onChange={(e) => setUserRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                    />
+                    <label
+                      htmlFor="userRememberMe"
+                      className="text-xs font-medium text-slate-600 select-none cursor-pointer"
+                    >
+                      Remember Me
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserPhone(userPhone || "9876543210");
+                      setUserOtp(["1", "2", "3", "4"]);
+                      setOtpSent(true);
+                      if (otpError) setOtpError("");
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                  >
+                    Auto-fill Demo
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 mt-2 rounded-full bg-[#0f52ba] hover:bg-[#0d47a1] text-white font-bold text-sm shadow-md hover:shadow-lg cursor-pointer transition-all duration-200"
                 >
                   Login
                 </button>
