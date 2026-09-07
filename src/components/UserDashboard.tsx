@@ -1,751 +1,590 @@
-import { useState, useEffect, useRef, type FC } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+﻿import { useState, useRef, type FC } from "react";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Props {
   onBack: () => void;
 }
-
+interface Alert {
+  type: string;
+  severity: "High" | "Moderate" | "Low";
+  distance: string;
+  time: string;
+}
+interface Settlement {
+  name: string;
+  risk: "Critical" | "High" | "Moderate";
+  population: number;
+}
+interface FamilyMember {
+  name: string;
+  initials: string;
+  status: "Safe" | "Unknown";
+  location: string;
+}
 interface ChatMessage {
   id: number;
   text: string;
   isUser: boolean;
 }
 
-const VIDISHA: [number, number] = [23.5251, 77.8121];
-
-const PLACES = [
-  { type: "safe", name: "Community Safe Point – Station Road", coords: [23.5285, 77.8065] as [number, number] },
-  { type: "shelter", name: "Govt. Relief Shelter – Civil Lines", coords: [23.5320, 77.8145] as [number, number] },
-  { type: "warn", name: "Reported Flood-Risk Zone", coords: [23.5350, 77.8200] as [number, number] },
-  { type: "hospital", name: "District Hospital, Vidisha", coords: [23.5220, 77.8260] as [number, number] },
-  { type: "hospital", name: "City Care Hospital", coords: [23.5175, 77.7995] as [number, number] },
-  { type: "safe", name: "Safe Point – Bus Stand", coords: [23.5210, 77.8095] as [number, number] },
-  { type: "shelter", name: "Community Shelter – Sanchi Road", coords: [23.5165, 77.8180] as [number, number] },
-  { type: "safe", name: "Safe Point – Udayagiri Chowk", coords: [23.5145, 77.8140] as [number, number] },
+// ─── Placeholder Data (Wayanad, Kerala) ───────────────────────────────────────
+const ALERTS: Alert[] = [
+  { type: "Landslide", severity: "High", distance: "2.4 km", time: "10 min ago" },
+  { type: "Flash Flood", severity: "Moderate", distance: "5.1 km", time: "32 min ago" },
+  { type: "Rockfall", severity: "Low", distance: "8.7 km", time: "1 hr ago" },
 ];
 
-const PIN_CONFIG: Record<string, { bg: string; icon: string }> = {
-  safe: { bg: "#22a559", icon: "🛡️" },
-  shelter: { bg: "#2f6fed", icon: "🏠" },
-  hospital: { bg: "#ef3b3b", icon: "H" },
-  warn: { bg: "#f59e0b", icon: "⚠️" },
-};
+const SETTLEMENTS: Settlement[] = [
+  { name: "Mundakkai Colony", risk: "Critical", population: 312 },
+  { name: "Chooralmala Village", risk: "Critical", population: 480 },
+  { name: "Attamala Ward", risk: "High", population: 215 },
+  { name: "Puthumala Hill Area", risk: "High", population: 178 },
+];
 
-function getBotReply(text: string): string {
-  const t = text.toLowerCase();
-  if (t.includes("safe") && t.includes("place"))
-    return "There are 12 safe places within 5 km. Check the Quick Access panel or the map for exact locations.";
-  if (t.includes("weather"))
-    return "It's 27°C with light rain in Vidisha right now, humidity at 68%.";
-  if (t.includes("emergency") || t.includes("contact"))
-    return "Tap the red 112 button in the sidebar to call emergency services immediately, available 24/7.";
-  if (t.includes("hospital"))
-    return 'The nearest hospitals are marked with a red "H" on the Live Safety Map — tap one to open directions.';
-  if (t.includes("shelter"))
-    return "There are 8 shelters open right now. They are marked in blue on the map.";
-  return "Got it — I've noted that. For anything urgent, please call 112 right away.";
+const FAMILY: FamilyMember[] = [
+  { name: "Rajan (Father)", initials: "RK", status: "Safe", location: "Meppadi Relief Camp" },
+  { name: "Suma (Mother)", initials: "SK", status: "Safe", location: "Meppadi Relief Camp" },
+  { name: "Arjun (Brother)", initials: "AK", status: "Unknown", location: "Last seen Chooralmala" },
+];
+
+const NAV_ITEMS = [
+  { label: "Dashboard", icon: "🏠" },
+  { label: "Safe Places", icon: "🛡️" },
+  { label: "Alerts", icon: "🔔" },
+  { label: "Risk Areas", icon: "⚠️" },
+  { label: "Relocation", icon: "🚌" },
+  { label: "My Family", icon: "👨‍👩‍👧" },
+  { label: "Resources", icon: "📚" },
+  { label: "Disaster Simulation", icon: "🌀" },
+  { label: "Settings", icon: "⚙️" },
+];
+
+const MAP_FILTERS = ["All", "Hazards", "Safe Sites", "Shelters", "Hospitals"];
+
+const RESOURCES = [
+  { icon: "📋", label: "NDMA Evacuation Guidelines" },
+  { icon: "🗺️", label: "Wayanad District Hazard Map" },
+  { icon: "🏥", label: "Nearby Medical Facilities" },
+  { icon: "📞", label: "Emergency Contact Directory" },
+];
+
+// ─── Helper: severity badge ───────────────────────────────────────────────────
+function SeverityBadge({ level }: { level: "High" | "Moderate" | "Low" | "Critical" }) {
+  const classes: Record<string, string> = {
+    High: "bg-red-100 text-red-700 border border-red-300",
+    Critical: "bg-red-200 text-red-800 border border-red-400",
+    Moderate: "bg-amber-100 text-amber-700 border border-amber-300",
+    Low: "bg-green-100 text-green-700 border border-green-300",
+  };
+  return (
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${classes[level]}`}>
+      {level}
+    </span>
+  );
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export const UserDashboard: FC<Props> = ({ onBack }) => {
+  const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("Dashboard");
-  const [chatInput, setChatInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 1,
-      text: "Hi Satyam! 👋\nHow can I help you stay safe today?",
-      isUser: false,
-    },
+  const [activeFilter, setActiveFilter] = useState("All");
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: 1, text: "Hello! I am your SurakshaSetu AI assistant. How can I help you stay safe today?", isUser: false },
   ]);
+  const [chatInput, setChatInput] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const userMarkerRef = useRef<L.Marker | null>(null);
-  const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const [reportType, setReportType] = useState("");
+  const [reportDesc, setReportDesc] = useState("");
+  const [reportSubmitted, setReportSubmitted] = useState(false);
 
-  // Initialize Leaflet Map
-  useEffect(() => {
-    if (!mapContainerRef.current || mapInstanceRef.current) return;
+  function getBotReply(text: string): string {
+    const t = text.toLowerCase();
+    if (t.includes("safe") && t.includes("place"))
+      return "There are 14 safe shelters within 10 km of your location in Wayanad. Meppadi Community Hall and Sultan Bathery Relief Camp are the closest.";
+    if (t.includes("route") || t.includes("evacuate") || t.includes("escape"))
+      return "Recommended evacuation: NH-766 towards Sultan Bathery - road is clear. Avoid Mundakkai road (active landslide zone).";
+    if (t.includes("weather") || t.includes("rain"))
+      return "Current Wayanad forecast: Heavy rainfall expected next 48h. IMD orange alert active. Stay indoors or evacuate now.";
+    if (t.includes("shelter"))
+      return "Open shelters: Meppadi Community Hall (cap. 500, 340 occupied), Sultan Bathery Govt. School (cap. 800, 520 occupied).";
+    if (t.includes("hospital") || t.includes("medical"))
+      return "Nearest hospitals: Wayanad District Hospital (8 km), Kalpetta General Hospital (12 km). Call 108 for ambulance.";
+    if (t.includes("family"))
+      return "Your family check-in shows 2 members safe at Meppadi Relief Camp. Arjun location is still unconfirmed - contact NDRF at 1800-180-7188.";
+    return "I understand. Please stay calm and follow official instructions. Call 112 for immediate assistance.";
+  }
 
-    const map = L.map(mapContainerRef.current, {
-      zoomControl: false,
-      attributionControl: true,
-    }).setView(VIDISHA, 14);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-    }).addTo(map);
-
-    // Helper for DivIcon
-    const makeIcon = (bg: string, icon: string, size = 30) =>
-      L.divIcon({
-        className: "",
-        html: `<div style="width:${size}px;height:${size}px;background:${bg};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,0.25);border:2px solid #fff;">${icon}</div>`,
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-        popupAnchor: [0, -size / 2],
-      });
-
-    // You are here marker
-    const userMarker = L.marker(VIDISHA, {
-      icon: L.divIcon({
-        className: "",
-        html: `<div style="width:36px;height:36px;background:#2f6fed;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 0 8px rgba(47,111,237,0.2),0 3px 8px rgba(0,0,0,0.25);border:2px solid #fff;">📍</div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18],
-        popupAnchor: [0, -18],
-      }),
-    })
-      .addTo(map)
-      .bindPopup("<b>You are here</b><br>Vidisha, Madhya Pradesh");
-
-    userMarkerRef.current = userMarker;
-
-    // Add place markers
-    PLACES.forEach((p) => {
-      const cfg = PIN_CONFIG[p.type];
-      const marker = L.marker(p.coords, {
-        icon: makeIcon(cfg.bg, cfg.icon, 30),
-      }).addTo(map);
-
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        p.name + " Vidisha"
-      )}`;
-      marker.bindPopup(
-        `<b>${p.name}</b><br><a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2f6fed;text-decoration:none;font-weight:600;">Open in Google Maps ›</a>`
-      );
-    });
-
-    mapInstanceRef.current = map;
-
-    return () => {
-      map.remove();
-      mapInstanceRef.current = null;
-    };
-  }, []);
-
-  const handleZoom = (delta: number) => {
-    if (!mapInstanceRef.current) return;
-    if (delta > 0) mapInstanceRef.current.zoomIn();
-    else mapInstanceRef.current.zoomOut();
-  };
-
-  const handleLocate = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.setView(coords, 15);
-        }
-        if (userMarkerRef.current) {
-          userMarkerRef.current.setLatLng(coords).bindPopup("<b>You are here</b>").openPopup();
-        }
-      },
-      (err) => {
-        alert("Could not get your location (" + err.message + "). Showing default location.");
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.setView(VIDISHA, 14);
-        }
-      }
-    );
-  };
-
-  const handleSendChat = (text: string) => {
-    if (!text.trim()) return;
-    const userMsg: ChatMessage = {
-      id: Date.now(),
-      text,
-      isUser: true,
-    };
-    setMessages((prev) => [...prev, userMsg]);
+  function sendChat() {
+    const text = chatInput.trim();
+    if (!text) return;
+    const userMsg: ChatMessage = { id: Date.now(), text, isUser: true };
+    const botMsg: ChatMessage = { id: Date.now() + 1, text: getBotReply(text), isUser: false };
+    setChatMessages((prev) => [...prev, userMsg, botMsg]);
     setChatInput("");
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  }
 
-    setTimeout(() => {
-      const replyMsg: ChatMessage = {
-        id: Date.now() + 1,
-        text: getBotReply(text),
-        isUser: false,
-      };
-      setMessages((prev) => [...prev, replyMsg]);
-      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 500);
-  };
+  function submitReport(e: React.FormEvent) {
+    e.preventDefault();
+    setReportSubmitted(true);
+    setTimeout(() => setReportSubmitted(false), 3000);
+    setReportType("");
+    setReportDesc("");
+  }
+
+  const Sidebar = (
+    <aside
+      className={`
+        fixed inset-y-0 left-0 z-40 w-52 bg-slate-900 flex flex-col
+        transform transition-transform duration-200
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        lg:static lg:translate-x-0 lg:flex
+      `}
+    >
+      <div className="px-4 py-5 border-b border-slate-700">
+        <div className="text-white font-extrabold text-lg leading-tight">SurakshaSetu</div>
+        <div className="text-slate-400 text-xs mt-0.5">Hazard Safety Platform</div>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto py-3">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => {
+              if (item.label !== "Dashboard") console.log(`Navigate to: ${item.label}`);
+              setActiveNav(item.label);
+              setSidebarOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors
+              ${
+                activeNav === item.label
+                  ? "bg-blue-600 text-white font-semibold"
+                  : "text-slate-300 hover:bg-slate-700 hover:text-white"
+              }`}
+          >
+            <span className="text-base">{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="px-4 py-4 border-t border-slate-700">
+        <a
+          href="tel:112"
+          className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-700 text-white font-bold text-sm py-2.5 rounded-lg transition-colors"
+        >
+          📞 Emergency 112
+        </a>
+        <button
+          onClick={onBack}
+          className="mt-2 w-full text-xs text-slate-400 hover:text-white text-center py-1.5 transition-colors"
+        >
+          Back to Home
+        </button>
+      </div>
+    </aside>
+  );
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8] text-[#1c2230] font-sans flex flex-col">
-      <div className="flex flex-1 relative overflow-hidden">
-        {/* Mobile backdrop */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+    <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-        {/* ── SIDEBAR ─────────────────────────────── */}
-        <aside
-          className={`
-            fixed lg:static inset-y-0 left-0 z-50
-            w-[240px] bg-white border-r border-[#eef0f3]
-            flex flex-col pb-5 transition-transform duration-300
-            lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          `}
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-b from-[#0f52ba] to-[#0a3d8c] text-white p-6 pb-7 flex flex-col gap-2.5">
-            <div className="flex items-center justify-between w-full">
-              <button
-                onClick={onBack}
-                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-base cursor-pointer transition-colors"
-                title="Back to Landing Page"
-              >
-                ←
-              </button>
-              <div className="w-10 h-10 border-2 border-white/80 rounded-full flex items-center justify-center text-xl">
-                🛡️
-              </div>
-            </div>
-            <h1 className="text-base font-bold tracking-tight m-0">User Page</h1>
-            <p className="text-xs text-white/80 -mt-1 m-0">Safety &amp; Relocation Portal</p>
+      {Sidebar}
+
+      <main className="flex-1 overflow-y-auto">
+        <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+          <button
+            className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100"
+            onClick={() => setSidebarOpen(true)}
+          >
+            ☰
+          </button>
+          <div className="flex-1">
+            <h1 className="text-base font-bold text-slate-800">Dashboard</h1>
+            <p className="text-xs text-slate-500">Wayanad District, Kerala — Live Hazard View</p>
           </div>
-
-          {/* Nav Items */}
-          <nav className="flex-1 p-3.5 space-y-1 overflow-y-auto">
-            <button
-              onClick={() => {
-                setActiveTab("Dashboard");
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
-                activeTab === "Dashboard"
-                  ? "bg-[#e8f1fe] text-[#0f52ba]"
-                  : "text-[#5b6274] hover:bg-[#f7f8fa]"
-              }`}
-            >
-              <span className="w-5 text-center text-base">🏠</span>
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab("Safe Places");
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
-                activeTab === "Safe Places"
-                  ? "bg-[#e8f1fe] text-[#0f52ba]"
-                  : "text-[#5b6274] hover:bg-[#f7f8fa]"
-              }`}
-            >
-              <span className="w-5 text-center text-base">🛡️</span>
-              <span>Safe Places</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab("Alerts");
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
-                activeTab === "Alerts"
-                  ? "bg-[#e8f1fe] text-[#0f52ba]"
-                  : "text-[#5b6274] hover:bg-[#f7f8fa]"
-              }`}
-            >
-              <span className="w-5 text-center text-base">🔔</span>
-              <span>Alerts</span>
-            </button>
-
-            <a
-              href="https://en.wikipedia.org/wiki/Family"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#5b6274] hover:bg-[#f7f8fa] transition-colors"
-            >
-              <span className="w-5 text-center text-base">👨‍👩‍👧</span>
-              <span>My Family</span>
-            </a>
-
-            <a
-              href="https://www.ndma.gov.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#5b6274] hover:bg-[#f7f8fa] transition-colors"
-            >
-              <span className="w-5 text-center text-base">📘</span>
-              <span>Resources</span>
-            </a>
-
-            {/* Back to Home Button */}
-            <div className="pt-2 border-t border-[#eef0f3] mt-2">
-              <button
-                onClick={onBack}
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-[#0f52ba] hover:bg-[#e8f1fe] cursor-pointer transition-colors"
-              >
-                <span className="w-5 text-center text-base">⬅️</span>
-                <span>Back to Home</span>
-              </button>
-            </div>
-          </nav>
-
-          {/* Emergency Helpline Box */}
-          <div className="mx-3.5 bg-[#f0f5ff] border border-[#d6e4ff] rounded-2xl p-4">
-            <div className="text-[11px] font-bold text-[#0f52ba] tracking-wide mb-2">
-              IN AN EMERGENCY?
-            </div>
-            <div className="flex items-center gap-3">
-              <a
-                href="tel:112"
-                className="w-9 h-9 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white rounded-full flex items-center justify-center text-sm shrink-0 transition-colors"
-              >
-                📞
-              </a>
-              <a href="tel:112" className="text-2xl font-extrabold text-[#1c2230] leading-none">
-                112
-              </a>
-            </div>
-            <div className="text-xs text-[#6b7280] mt-2">Emergency Call</div>
-            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-[#22a559] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#22a559] inline-block" />
-              Available 24/7
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:flex items-center gap-1.5 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+              Live
+            </span>
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+              RK
             </div>
           </div>
-        </aside>
+        </header>
 
-        {/* ── MAIN CONTENT ────────────────────────── */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 pb-12">
-          {/* Topbar */}
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#eef0f3] rounded-lg text-xs font-bold text-[#5b6274] hover:text-[#ef3b3b] hover:bg-white shadow-xs cursor-pointer transition-colors"
-                title="Back to Landing Page"
-              >
-                <span>⬅️</span>
-                <span className="hidden sm:inline">Home</span>
-              </button>
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-1.5 text-xl text-[#333] cursor-pointer"
-              >
-                ☰
-              </button>
-              <div>
-                <p className="text-xs text-[#6b7280] m-0">Welcome back,</p>
-                <h2 className="text-2xl font-extrabold m-0 flex items-center gap-2 text-[#1c2230]">
-                  Satyam <span>👋</span>
-                </h2>
+        <div className="p-4 space-y-4 max-w-7xl mx-auto">
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <p className="text-xs text-slate-500 font-medium mb-1">Safety Status</p>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🛡️</span>
+                <span className="bg-green-100 text-green-700 text-sm font-bold px-2 py-0.5 rounded-full">Safe</span>
               </div>
+              <p className="text-xs text-slate-400 mt-2">Last verified 5 min ago</p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div
-                className="relative text-xl cursor-pointer"
-                onClick={() => alert("13 new alerts in your area")}
-              >
-                🔔
-                <span className="absolute -top-1.5 -right-2 bg-[#ef3b3b] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 border border-white">
-                  13
-                </span>
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <p className="text-xs text-slate-500 font-medium mb-1">Current Location</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📍</span>
+                <span className="text-sm font-bold text-slate-800">Meppadi</span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#cbd5e1] to-[#94a3b8] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                S
+              <p className="text-xs text-slate-400 mt-2">Wayanad, Kerala</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <p className="text-xs text-slate-500 font-medium mb-1">Weather and Hazard</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🌧️</span>
+                <span className="text-sm font-bold text-slate-800">Heavy Rain</span>
+              </div>
+              <p className="text-xs text-amber-600 mt-2 font-medium">IMD Orange Alert</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-red-200 shadow-sm bg-red-50">
+              <p className="text-xs text-slate-500 font-medium mb-1">Risk Level</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚠️</span>
+                <span className="text-sm font-bold text-red-700">High</span>
+              </div>
+              <p className="text-xs text-red-500 mt-2 font-medium">Landslide zone nearby</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-800">🔔 Active Alerts</h2>
+              <span className="text-xs text-blue-600 font-medium cursor-pointer hover:underline">View all</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                    <th className="px-4 py-2 text-left font-medium">Disaster Type</th>
+                    <th className="px-4 py-2 text-left font-medium">Severity</th>
+                    <th className="px-4 py-2 text-left font-medium">Distance</th>
+                    <th className="px-4 py-2 text-left font-medium">Time</th>
+                    <th className="px-4 py-2 text-left font-medium">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {ALERTS.map((a, i) => (
+                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-slate-800">{a.type}</td>
+                      <td className="px-4 py-3"><SeverityBadge level={a.severity} /></td>
+                      <td className="px-4 py-3 text-slate-600">{a.distance}</td>
+                      <td className="px-4 py-3 text-slate-400">{a.time}</td>
+                      <td className="px-4 py-3">
+                        <button className="text-blue-600 hover:underline text-xs font-medium">View details</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+              <h2 className="text-sm font-bold text-slate-800">🗺️ Live Hazard and Safety Map</h2>
+              <div className="flex gap-1.5 flex-wrap">
+                {MAP_FILTERS.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveFilter(f)}
+                    className={`text-xs px-3 py-1 rounded-full font-medium border transition-colors
+                      ${activeFilter === f
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-300 hover:border-blue-400"}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="m-4 h-60 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-400">
+              <span className="text-4xl">🗺️</span>
+              <p className="text-sm font-medium">Interactive Map — Wayanad District</p>
+              <p className="text-xs">Red zones · Safe shelters · Evacuation routes</p>
+              <div className="flex gap-4 text-xs mt-1">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full" />Hazard</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full" />Safe</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full" />Shelter</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-500 rounded-full" />Hospital</span>
               </div>
             </div>
           </div>
 
-          {/* ── TOP STAT CARDS ─────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-            {/* Safe Status Card */}
-            <div className="bg-gradient-to-b from-[#eefaf1] to-[#f6fdf8] border border-[#dff2e4] rounded-2xl p-5 text-center shadow-xs">
-              <div className="w-16 h-16 rounded-full bg-white border-2 border-[#cdeed9] flex items-center justify-center text-3xl mx-auto mb-2.5 text-[#22a559]">
-                🛡️
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <h2 className="text-sm font-bold text-slate-800">🚨 High-Risk Settlements</h2>
               </div>
-              <div className="text-xs tracking-widest text-[#22a559] font-bold">YOU ARE</div>
-              <div className="text-3xl font-extrabold text-[#22a559] my-0.5 tracking-wide">
-                SAFE
-              </div>
-              <div className="text-xs text-[#5f7a68]">Stay alert, stay safe!</div>
+              <ul className="divide-y divide-slate-100">
+                {SETTLEMENTS.map((s, i) => (
+                  <li key={i} className="px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">{s.name}</p>
+                      <p className="text-xs text-slate-400">{s.population} residents</p>
+                    </div>
+                    <SeverityBadge level={s.risk} />
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            {/* Current Location */}
-            <div className="bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-              <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#fdeaea] text-[#ef3b3b] flex items-center justify-center text-lg shrink-0">
-                  📍
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <h2 className="text-sm font-bold text-slate-800">🏕️ Recommended Relocation Site</h2>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">Sultan Bathery Govt. HSS</p>
+                    <p className="text-xs text-slate-500">Sultan Bathery, Wayanad — 18 km away</p>
+                  </div>
+                  <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Open</span>
                 </div>
-                <div>
-                  <p className="text-xs text-[#8890a0] m-0 mb-0.5">Current Location</p>
-                  <p className="text-lg font-extrabold text-[#1c2230] m-0">Vidisha</p>
-                  <p className="text-xs text-[#8890a0] mt-0.5">Madhya Pradesh, India</p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-slate-500">
+                    <span>Capacity used</span>
+                    <span className="font-medium text-slate-700">520 / 800</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: "65%" }} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { label: "Food", value: "Available", color: "text-green-600" },
+                    { label: "Medical", value: "On-site", color: "text-green-600" },
+                    { label: "Water", value: "Available", color: "text-green-600" },
+                    { label: "Transport", value: "Limited", color: "text-amber-600" },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-slate-50 rounded-lg p-2 text-center">
+                      <p className="text-slate-400">{item.label}</p>
+                      <p className={`font-semibold ${item.color}`}>{item.value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=Vidisha,Madhya+Pradesh,India"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white text-xs font-bold rounded-lg w-fit mt-3 transition-colors"
-              >
-                View on Map ›
-              </a>
-            </div>
-
-            {/* Weather Status */}
-            <div className="bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-              <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#e8f1fe] text-[#2f6fed] flex items-center justify-center text-lg shrink-0">
-                  🌧️
-                </div>
-                <div>
-                  <p className="text-xs text-[#8890a0] m-0 mb-0.5">Weather Status</p>
-                  <p className="text-lg font-extrabold text-[#1c2230] m-0">27°C</p>
-                  <p className="text-xs text-[#8890a0] mt-0.5">Light Rain</p>
-                  <p className="text-xs text-[#8890a0]">Humidity 68%</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Risk Level */}
-            <div className="bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-              <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#fff3e0] text-[#f59e0b] flex items-center justify-center text-lg shrink-0">
-                  <svg width="28" height="28" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="#f3e3d0" strokeWidth="4" />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15"
-                      fill="none"
-                      stroke="#f59e0b"
-                      strokeWidth="4"
-                      strokeDasharray="70 30"
-                      strokeLinecap="round"
-                      transform="rotate(-90 18 18)"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs text-[#8890a0] m-0 mb-0.5">Risk Level</p>
-                  <p className="text-lg font-extrabold text-[#f59e0b] m-0">Moderate</p>
-                  <p className="text-xs text-[#8890a0] mt-0.5">Stay informed</p>
-                </div>
-              </div>
-              <a
-                href="https://sachet.ndma.gov.in/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#d6e4ff] text-[#0f52ba] text-xs font-bold rounded-lg w-fit mt-3 shadow-xs hover:bg-[#f0f5ff] transition-colors"
-              >
-                Details ›
-              </a>
             </div>
           </div>
 
-          {/* ── ALERT BANNER ───────────────────────── */}
-          <div className="bg-gradient-to-r from-[#f0f5ff] to-[#f8faff] border border-[#d6e4ff] rounded-2xl p-4 sm:p-5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="text-2xl text-[#0f52ba]">⚠️</div>
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-[#0f52ba] m-0">
-                  Report an Alert
-                </h3>
-                <p className="text-xs text-[#5b6274] m-0 mt-0.5">
-                  Help us keep our community safe
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <h2 className="text-sm font-bold text-slate-800 mb-3">🚗 Safe Relocation Route</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1 space-y-1">
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">From:</span> Meppadi, Wayanad
+                  <span className="mx-2 text-slate-300">→</span>
+                  <span className="font-semibold">To:</span> Sultan Bathery Govt. HSS
+                </p>
+                <p className="text-xs text-slate-500">
+                  Via NH-766 · 18 km · Est. 35 min · Road status: <span className="text-green-600 font-medium">Clear</span>
+                </p>
+                <p className="text-xs text-red-500 font-medium">
+                  ⚠ Avoid: Mundakkai–Chooralmala road (active landslide)
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl opacity-60 hidden sm:inline">🚨</span>
-              <a
-                href="mailto:alerts@surakshasetu.gov.in?subject=New%20Safety%20Alert&body=Location%3A%20Vidisha%2C%20Madhya%20Pradesh%0ADescription%3A%20"
-                className="px-4 py-2 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xs transition-colors"
-              >
-                Report Now ›
-              </a>
-            </div>
-          </div>
-
-          {/* ── MAIN ROW: MAP / QUICK ACCESS / CHAT ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5 items-start">
-            {/* Map Column (6 cols) */}
-            <div className="lg:col-span-6 bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3.5">
-                <div className="flex items-center gap-2 font-extrabold text-sm text-[#1c2230]">
-                  <span className="w-2 h-2 rounded-full bg-[#22a559]" />
-                  <span>Live Safety Map</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#22a559]">
-                  <span className="w-2 h-2 rounded-full bg-[#22a559] animate-pulse" />
-                  Live
-                </div>
-              </div>
-
-              {/* Map View */}
-              <div className="relative h-[340px] rounded-xl overflow-hidden border border-[#eef0f3]">
-                <div ref={mapContainerRef} className="w-full h-full" />
-                <div className="absolute right-3 bottom-3 flex flex-col gap-1.5 z-[400]">
-                  <button
-                    onClick={() => handleZoom(1)}
-                    className="w-8 h-8 bg-white border border-[#e5e7eb] rounded-lg text-base font-bold flex items-center justify-center shadow-md hover:bg-slate-50 cursor-pointer"
-                    title="Zoom in"
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => handleZoom(-1)}
-                    className="w-8 h-8 bg-white border border-[#e5e7eb] rounded-lg text-base font-bold flex items-center justify-center shadow-md hover:bg-slate-50 cursor-pointer"
-                    title="Zoom out"
-                  >
-                    −
-                  </button>
-                  <button
-                    onClick={handleLocate}
-                    className="w-8 h-8 bg-white border border-[#e5e7eb] rounded-lg text-sm flex items-center justify-center shadow-md hover:bg-slate-50 cursor-pointer"
-                    title="Find my location"
-                  >
-                    ◎
-                  </button>
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div className="flex flex-wrap gap-3 mt-3 text-xs text-[#6b7280]">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#2f6fed]" /> Your Location
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#22a559]" /> Safe Place
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#2f6fed]" /> Shelter
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#ef3b3b]" /> Hospital
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#f59e0b]" /> Flood Risk Zone
-                </span>
-              </div>
-            </div>
-
-            {/* Quick Access Column (3 cols) */}
-            <div className="lg:col-span-3 bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="font-extrabold text-sm text-[#1c2230] mb-3">Quick Access</div>
-                <div className="divide-y divide-[#f2f3f5]">
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=safe+places+near+Vidisha"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 py-2.5 hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-[#22a559] text-white flex items-center justify-center text-sm shrink-0">
-                      🛡️
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <b className="block text-xs font-bold text-[#1c2230] truncate">Safe Places</b>
-                      <span className="text-[11px] text-[#8890a0] truncate block">
-                        Nearest secure locations
-                      </span>
-                    </div>
-                    <span className="text-slate-400">›</span>
-                  </a>
-
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=hospitals+near+Vidisha"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 py-2.5 hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-[#ef3b3b] text-white flex items-center justify-center text-sm font-bold shrink-0">
-                      H
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <b className="block text-xs font-bold text-[#1c2230] truncate">Nearby Hospitals</b>
-                      <span className="text-[11px] text-[#8890a0] truncate block">
-                        Medical assistance near you
-                      </span>
-                    </div>
-                    <span className="text-slate-400">›</span>
-                  </a>
-
-                  <button
-                    onClick={handleLocate}
-                    className="w-full flex items-center gap-3 py-2.5 hover:bg-slate-50 text-left cursor-pointer transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-[#2f6fed] text-white flex items-center justify-center text-sm shrink-0">
-                      📍
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <b className="block text-xs font-bold text-[#1c2230] truncate">My Location</b>
-                      <span className="text-[11px] text-[#8890a0] truncate block">
-                        Share live location
-                      </span>
-                    </div>
-                    <span className="text-slate-400">›</span>
-                  </button>
-
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=shelters+near+Vidisha"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 py-2.5 hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-[#7c5cf0] text-white flex items-center justify-center text-sm shrink-0">
-                      🏠
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <b className="block text-xs font-bold text-[#1c2230] truncate">Shelters</b>
-                      <span className="text-[11px] text-[#8890a0] truncate block">
-                        Find relief shelters
-                      </span>
-                    </div>
-                    <span className="text-slate-400">›</span>
-                  </a>
-                </div>
-              </div>
-
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=Vidisha,Madhya+Pradesh,India"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full mt-4 py-2 rounded-xl border border-[#d6e4ff] bg-white text-[#0f52ba] font-bold text-xs text-center hover:bg-[#f0f5ff] transition-colors block"
-              >
-                View All on Map
-              </a>
-            </div>
-
-            {/* AI Chat Column (3 cols) */}
-            <div className="lg:col-span-3 bg-white border border-[#eef0f3] rounded-2xl p-5 shadow-xs flex flex-col h-full min-h-[380px]">
-              <div className="font-extrabold text-sm text-[#1c2230] mb-3">Chat With Bot</div>
-
-              {/* Messages list */}
-              <div className="flex-1 overflow-y-auto space-y-2.5 mb-3 max-h-[220px] pr-1">
-                {messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`flex gap-2 p-2.5 rounded-xl text-xs leading-relaxed ${
-                      m.isUser
-                        ? "bg-[#e8f1fe] text-[#1c2230] flex-row-reverse text-right"
-                        : "bg-[#f7f8fa] text-[#1c2230]"
-                    }`}
-                  >
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 ${
-                        m.isUser ? "bg-white" : "bg-[#20232b] text-white"
-                      }`}
-                    >
-                      {m.isUser ? "🙋" : "🤖"}
-                    </div>
-                    <p className="m-0 whitespace-pre-line">{m.text}</p>
-                  </div>
-                ))}
-                <div ref={chatBottomRef} />
-              </div>
-
-              {/* Quick suggestion chips */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {["Nearby safe places", "Weather update", "Emergency contact"].map((chip) => (
-                  <button
-                    key={chip}
-                    onClick={() => handleSendChat(chip)}
-                    className="border border-[#e5e7eb] bg-white hover:bg-[#f7f8fa] rounded-full px-2.5 py-1 text-[11px] text-[#374151] cursor-pointer transition-colors"
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-
-              {/* Input row */}
-              <div className="flex gap-2 items-center mt-auto">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSendChat(chatInput);
-                  }}
-                  placeholder="Type something..."
-                  className="flex-1 border border-[#e5e7eb] rounded-xl px-3 py-2 text-xs outline-none focus:border-[#0f52ba]"
-                />
-                <button
-                  onClick={() => handleSendChat(chatInput)}
-                  className="w-8 h-8 bg-[#0f52ba] hover:bg-[#0a3d8c] text-white rounded-xl flex items-center justify-center text-xs cursor-pointer transition-colors"
-                >
-                  ➤
+              <div className="flex flex-col gap-2 min-w-fit">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
+                  Get Directions 🗺️
+                </button>
+                <button className="text-blue-600 hover:underline text-xs text-center font-medium">
+                  View alternative route
                 </button>
               </div>
             </div>
           </div>
 
-          {/* ── BOTTOM STATS STRIP ─────────────────── */}
-          <div className="bg-white border border-[#eef0f3] rounded-2xl shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-[#f0f1f3] p-4 lg:p-5">
-            <div className="flex items-center gap-3 p-3">
-              <div className="w-11 h-11 rounded-full bg-[#fdeceb] text-[#ef3b3b] flex items-center justify-center text-lg shrink-0">
-                🔔
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <h2 className="text-sm font-bold text-slate-800">📝 Report an Incident</h2>
               </div>
-              <div>
-                <h4 className="text-lg font-extrabold m-0 text-[#1c2230]">3</h4>
-                <p className="text-xs text-[#8890a0] m-0">Active Alerts</p>
-                <p className="text-[10px] text-[#8890a0] m-0">In your area</p>
-              </div>
+              <form onSubmit={submitReport} className="p-4 space-y-3">
+                {reportSubmitted && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 text-xs rounded-lg px-3 py-2 font-medium">
+                    ✅ Report submitted successfully!
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs text-slate-500 font-medium mb-1 block">Incident Type</label>
+                  <select
+                    value={reportType}
+                    onChange={(e) => setReportType(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select type…</option>
+                    <option>Landslide</option>
+                    <option>Flash Flood</option>
+                    <option>Road Blocked</option>
+                    <option>Person Missing</option>
+                    <option>Structural Damage</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 font-medium mb-1 block">Description</label>
+                  <textarea
+                    value={reportDesc}
+                    onChange={(e) => setReportDesc(e.target.value)}
+                    rows={3}
+                    placeholder="Describe what you observed…"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 font-medium mb-1 block">Photo (optional)</label>
+                  <div className="border-2 border-dashed border-slate-200 rounded-lg p-3 text-center text-slate-400 text-xs cursor-pointer hover:border-blue-400 transition-colors">
+                    📷 Tap to attach photo
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+                >
+                  Submit Report
+                </button>
+              </form>
             </div>
 
-            <div className="flex items-center gap-3 p-3">
-              <div className="w-11 h-11 rounded-full bg-[#e8f7ee] text-[#22a559] flex items-center justify-center text-lg shrink-0">
-                🛡️
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <h2 className="text-sm font-bold text-slate-800">🤖 AI Assistant</h2>
               </div>
-              <div>
-                <h4 className="text-lg font-extrabold m-0 text-[#1c2230]">12</h4>
-                <p className="text-xs text-[#8890a0] m-0">Safe Places Nearby</p>
-                <p className="text-[10px] text-[#8890a0] m-0">Within 5 km</p>
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-64">
+                {chatMessages.map((m) => (
+                  <div key={m.id} className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-xs text-xs px-3 py-2 rounded-2xl leading-relaxed
+                        ${m.isUser
+                          ? "bg-blue-600 text-white rounded-br-sm"
+                          : "bg-slate-100 text-slate-700 rounded-bl-sm"}`}
+                    >
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
               </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3">
-              <div className="w-11 h-11 rounded-full bg-[#e8f1fe] text-[#2f6fed] flex items-center justify-center text-lg shrink-0">
-                🏠
+              <div className="px-4 pb-2 flex gap-1.5 flex-wrap">
+                {["Nearest shelter", "Evacuation route", "Weather update"].map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => setChatInput(chip)}
+                    className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-full hover:bg-blue-100 transition-colors"
+                  >
+                    {chip}
+                  </button>
+                ))}
               </div>
-              <div>
-                <h4 className="text-lg font-extrabold m-0 text-[#1c2230]">8</h4>
-                <p className="text-xs text-[#8890a0] m-0">Shelters Available</p>
-                <p className="text-[10px] text-[#8890a0] m-0">Open now</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3">
-              <div className="w-11 h-11 rounded-full bg-[#f1ecfd] text-[#7c5cf0] flex items-center justify-center text-lg shrink-0">
-                👨‍👩‍👧
-              </div>
-              <div>
-                <h4 className="text-lg font-extrabold m-0 text-[#1c2230]">4,582</h4>
-                <p className="text-xs text-[#8890a0] m-0">People Protected</p>
-                <p className="text-[10px] text-[#8890a0] m-0">In your zone</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 sm:col-span-2 lg:col-span-1">
-              <div className="w-11 h-11 rounded-full bg-[#fdeceb] text-[#ef3b3b] flex items-center justify-center text-lg shrink-0">
-                🛡️
-              </div>
-              <div>
-                <h4 className="text-xs font-extrabold m-0 text-[#1c2230] leading-snug">
-                  Together, we build a safer tomorrow.
-                </h4>
-                <p className="text-[10px] text-[#8890a0] m-0 mt-0.5">Stay alert. Stay alive. 🤍</p>
+              <div className="p-3 border-t border-slate-100 flex gap-2">
+                <input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendChat()}
+                  placeholder="Ask about safety, routes, shelters…"
+                  className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={sendChat}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+                >
+                  Send
+                </button>
               </div>
             </div>
           </div>
-        </main>
-      </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-sm font-bold text-slate-800">👨‍👩‍👧 My Family</h2>
+                <button className="text-xs text-blue-600 hover:underline font-medium">+ Add member</button>
+              </div>
+              <ul className="divide-y divide-slate-100">
+                {FAMILY.map((f, i) => (
+                  <li key={i} className="px-4 py-3 flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 text-sm font-bold flex items-center justify-center">
+                        {f.initials}
+                      </div>
+                      <span
+                        className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white
+                          ${f.status === "Safe" ? "bg-green-500" : "bg-amber-400"}`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 truncate">{f.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{f.location}</p>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full
+                        ${f.status === "Safe" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}
+                    >
+                      {f.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <h2 className="text-sm font-bold text-slate-800">📚 Resources</h2>
+              </div>
+              <ul className="divide-y divide-slate-100">
+                {RESOURCES.map((r, i) => (
+                  <li key={i}>
+                    <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left">
+                      <span className="text-xl">{r.icon}</span>
+                      <span className="text-sm text-slate-700 font-medium">{r.label}</span>
+                      <span className="ml-auto text-slate-300 text-sm">›</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-slate-800 rounded-xl p-4">
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-3">Emergency Contacts</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Police — 112", href: "tel:112" },
+                { label: "NDMA — 1800-180-7188", href: "tel:18001807188" },
+                { label: "SDMA Kerala — 1070", href: "tel:1070" },
+                { label: "NDRF — 011-24363260", href: "tel:01124363260" },
+                { label: "Ambulance — 108", href: "tel:108" },
+              ].map((c) => (
+                <a
+                  key={c.label}
+                  href={c.href}
+                  className="flex items-center gap-1.5 bg-slate-700 hover:bg-red-700 text-white text-xs font-medium px-3 py-2 rounded-full transition-colors"
+                >
+                  📞 {c.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-4" />
+        </div>
+      </main>
     </div>
   );
 };
