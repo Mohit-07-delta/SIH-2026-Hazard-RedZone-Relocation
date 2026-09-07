@@ -125,6 +125,38 @@ const BotIcon: FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+const EyeIcon: FC<{ className?: string }> = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="7" r="3" />
+  </svg>
+);
+
+const EyeOffIcon: FC<{ className?: string }> = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </svg>
+);
+
 /* ──────────────────────────────────────────────
    Role Tab Data
    ────────────────────────────────────────────── */
@@ -231,6 +263,10 @@ interface LandingPageProps {
 
 const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
   const [activeRole, setActiveRole] = useState<RoleKey>("user");
+  const [adminId, setAdminId] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const active = ROLES.find((r) => r.key === activeRole)!;
 
   return (
@@ -330,30 +366,105 @@ const LandingPage: FC<LandingPageProps> = ({ onNavigate }) => {
             </div>
 
             {/* ── Active role content ─────────── */}
-            <div className="min-h-[210px]">
-              <ul className="space-y-3 mb-8">
-                {active.points.map((pt) => (
-                  <li key={pt} className="flex items-start gap-3 text-sm text-slate-600">
-                    <span
-                      className={`mt-[7px] shrink-0 w-1.5 h-1.5 rounded-full ${active.dotColor}`}
-                    />
-                    {pt}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {activeRole === "admin" ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  console.log("admin login");
+                }}
+                className="space-y-4 mb-2"
+              >
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                    Enter Admin-Id
+                  </label>
+                  <input
+                    type="text"
+                    value={adminId}
+                    onChange={(e) => setAdminId(e.target.value)}
+                    placeholder="— — — — — — — —"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-100 text-slate-800 text-sm placeholder:text-slate-400 placeholder:tracking-widest outline-none border border-transparent focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-200 transition-all duration-200"
+                  />
+                </div>
 
-            {/* CTA */}
-            <button
-              onClick={() => onNavigate ? onNavigate(activeRole) : console.log(`navigate to ${activeRole}`)}
-              className={`
-                w-full py-3 rounded-xl text-white font-semibold text-sm
-                cursor-pointer transition-colors duration-200 shadow-sm
-                ${active.ctaBg}
-              `}
-            >
-              {active.ctaLabel}
-            </button>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                    Enter Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      placeholder="— — — — — — — —"
+                      className="w-full px-4 py-3 pr-11 rounded-lg bg-slate-100 text-slate-800 text-sm placeholder:text-slate-400 placeholder:tracking-widest outline-none border border-transparent focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-200 transition-all duration-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <EyeOffIcon className="w-4 h-4" />
+                      ) : (
+                        <EyeIcon className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="adminRememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 cursor-pointer accent-slate-900"
+                  />
+                  <label
+                    htmlFor="adminRememberMe"
+                    className="text-xs font-medium text-slate-600 select-none cursor-pointer"
+                  >
+                    Remember Me
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 mt-2 rounded-full bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-sm shadow-md hover:shadow-lg cursor-pointer transition-all duration-200"
+                >
+                  Login
+                </button>
+              </form>
+            ) : (
+              <>
+                <div className="min-h-[210px]">
+                  <ul className="space-y-3 mb-8">
+                    {active.points.map((pt) => (
+                      <li key={pt} className="flex items-start gap-3 text-sm text-slate-600">
+                        <span
+                          className={`mt-[7px] shrink-0 w-1.5 h-1.5 rounded-full ${active.dotColor}`}
+                        />
+                        {pt}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* CTA */}
+                <button
+                  onClick={() => onNavigate ? onNavigate(activeRole) : console.log(`navigate to ${activeRole}`)}
+                  className={`
+                    w-full py-3 rounded-xl text-white font-semibold text-sm
+                    cursor-pointer transition-colors duration-200 shadow-sm
+                    ${active.ctaBg}
+                  `}
+                >
+                  {active.ctaLabel}
+                </button>
+              </>
+            )}
 
             {/* Footer line */}
             <p className="mt-5 text-center text-[11px] text-slate-400">
