@@ -111,10 +111,10 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
 
-  // Floating AI Chat State
+  // Floating AI Assistant State
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: 1, text: "Namaste! Main SurakshaSetu AI assistant hoon. Main aapki kya madad kar sakta hoon?", isUser: false },
+    { id: 1, text: "Namaste! Main SurakshaSetu AI assistant hoon. Aapki kya madad kar sakta hoon?", isUser: false },
   ]);
   const [chatInput, setChatInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -125,11 +125,11 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   function getBotReply(t: string): string {
     const l = t.toLowerCase();
     if (l.includes("safe") || l.includes("shelter")) return "Wayanad me 14 safe shelters active hain. Nearest: Meppadi Relief Shelter (1.8 km).";
-    if (l.includes("route") || l.includes("evacuate")) return "Evacuation route NH-766 clear hai towards Sultan Bathery. Chooralmala road avoid karein.";
-    if (l.includes("weather") || l.includes("rain")) return "Heavy rainfall expected hai next 48h. IMD orange alert active hai.";
-    if (l.includes("hospital") || l.includes("medical")) return "Wayanad District Hospital 8 km door hai. Ambulance ke liye 108 dial karein.";
-    if (l.includes("family")) return "Family status: 2 members safe hain Meppadi Relief Camp mein.";
-    return "Surakshit rahein aur official guidelines follow karein. Kisi bhi emergency mein 112 call karein.";
+    if (l.includes("route") || l.includes("evacuate")) return "Evacuation route NH-766 clear hai towards Sultan Bathery. Mundakkai-Chooralmala road avoid karein.";
+    if (l.includes("weather") || l.includes("rain")) return "Heavy rainfall alert expected agle 48 ghante me. IMD orange alert active hai.";
+    if (l.includes("hospital") || l.includes("medical")) return "Wayanad District Hospital (8 km door). Emergency ambulance ke liye 108 par call karein.";
+    if (l.includes("family")) return "Family Update: 2 members safe hain Meppadi Relief Camp me.";
+    return "Kripya surakshit sthan par rahein aur official instructions follow karein. Emergency ke liye 112 call karein.";
   }
 
   function sendChat(overrideText?: string) {
@@ -153,14 +153,18 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
 
   return (
     <div className="relative flex h-screen bg-slate-100 overflow-hidden font-sans">
+      {/* Sidebar Desktop */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 bg-slate-900 h-full">
         <SidebarInner {...sp} />
       </aside>
+
+      {/* Sidebar Mobile */}
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-slate-900 flex flex-col lg:hidden transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <SidebarInner {...sp} />
       </aside>
 
+      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100" onClick={() => setSidebarOpen(true)}>
@@ -347,14 +351,14 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
       </main>
 
       {/* ========================================================================= */}
-      {/* 🚀 100% VISIBLE FLOATING AI ASSISTANT BUTTON & CHAT WINDOW (RIGHT CORNER) */}
+      {/* 🚀 FLOATING CIRCLE AI ASSISTANT (RIGHT SIDE BOTTOM CORNER) */}
       {/* ========================================================================= */}
       <div 
         style={{ 
           position: "fixed", 
           bottom: "24px", 
           right: "24px", 
-          zIndex: 99999,
+          zIndex: 999999,
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-end"
@@ -368,12 +372,12 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               maxWidth: "calc(100vw - 32px)",
               height: "480px",
               maxHeight: "75vh",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.25)"
+              boxShadow: "0 20px 40px rgba(0,0,0,0.3)"
             }}
-            className="mb-4 bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden"
+            className="mb-3 bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="bg-blue-600 p-4 text-white flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <Icon name="bot" size={18} />
@@ -389,6 +393,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               <button
                 onClick={() => setIsAiOpen(false)}
                 className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
+                title="Close"
               >
                 <Icon name="x" size={18} />
               </button>
@@ -397,7 +402,12 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
             {/* Chat Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
               {chatMessages.map(m => (
-                <div key={m.id} className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
+                <div key={m.id} className={`flex ${m.isUser ? "justify-end" : "justify-start gap-2"}`}>
+                  {!m.isUser && (
+                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Icon name="bot" size={12} />
+                    </div>
+                  )}
                   <div className={`max-w-[80%] text-xs px-3.5 py-2.5 rounded-2xl leading-relaxed shadow-sm ${
                     m.isUser 
                       ? "bg-blue-600 text-white" 
@@ -410,7 +420,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Quick Chips */}
+            {/* Quick Suggestions */}
             <div className="p-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto">
               {["Nearest shelter", "Evacuation route", "Weather alert"].map(chip => (
                 <button
@@ -423,7 +433,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               ))}
             </div>
 
-            {/* Input Bar */}
+            {/* Input Box */}
             <div className="p-3 bg-white border-t border-slate-200 flex gap-2">
               <input
                 value={chatInput}
@@ -442,18 +452,19 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
         )}
 
-        {/* Floating Circle Button */}
+        {/* Circular Floating AI Button */}
         <button
           onClick={() => setIsAiOpen(prev => !prev)}
           style={{
-            width: "58px",
-            height: "58px",
+            width: "60px",
+            height: "60px",
             borderRadius: "50%",
-            boxShadow: "0 10px 25px rgba(37, 99, 235, 0.45)"
+            boxShadow: "0 8px 24px rgba(37, 99, 235, 0.45)"
           }}
-          className="relative bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-white"
+          className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-white"
+          title={isAiOpen ? "Close AI Assistant" : "Open AI Assistant"}
         >
-          {/* Green Pulse Dot */}
+          {/* Online green pulse dot */}
           <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
