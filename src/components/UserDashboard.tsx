@@ -1,7 +1,16 @@
 import { useState, useRef, type FC, type ReactNode, type FormEvent } from "react";
 
 const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
-  const c = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const c = { 
+    width: size, 
+    height: size, 
+    viewBox: "0 0 24 24", 
+    fill: "none", 
+    stroke: "currentColor", 
+    strokeWidth: 2, 
+    strokeLinecap: "round" as const, 
+    strokeLinejoin: "round" as const 
+  };
   const p: Record<string, ReactNode> = {
     home: <><path d="m3 10 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
     shield: <><path d="M12 3 4 6v5c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></>,
@@ -16,6 +25,11 @@ const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
     report: <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></>,
     phone: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.4 2 2 0 0 1 3.05 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18z"/></>,
     menu: <><path d="M4 6h16M4 12h16M4 18h16"/></>,
+    // Newly Added Icons for Floating AI Assistant
+    bot: <><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></>,
+    x: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+    send: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
+    sparkles: <><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></>,
   };
   return <svg {...c}>{p[name] ?? p.settings}</svg>;
 };
@@ -98,6 +112,10 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
+
+  // Floating Chat State
+  const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false);
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { id: 1, text: "Hello! I am your SurakshaSetu AI assistant. How can I help you stay safe today?", isUser: false },
   ]);
@@ -118,14 +136,14 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
     return "Please stay calm and follow official instructions. Call 112 for immediate help.";
   }
 
-  function sendChat() {
-    const text = chatInput.trim();
+  function sendChat(overrideText?: string) {
+    const text = (overrideText ?? chatInput).trim();
     if (!text) return;
     const u: ChatMessage = { id: Date.now(), text, isUser: true };
     const b: ChatMessage = { id: Date.now() + 1, text: getBotReply(text), isUser: false };
     setChatMessages(prev => [...prev, u, b]);
     setChatInput("");
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }
 
   function submitReport(e: FormEvent) {
@@ -138,14 +156,19 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   const sp = { activeNav, setActiveNav, setSidebarOpen, onBack };
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
+    <div className="relative flex h-screen bg-slate-100 overflow-hidden font-sans">
+      {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 bg-slate-900 h-full">
         <SidebarInner {...sp} />
       </aside>
+
+      {/* Mobile Drawer */}
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-slate-900 flex flex-col lg:hidden transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <SidebarInner {...sp} />
       </aside>
+
+      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100" onClick={() => setSidebarOpen(true)}>
@@ -357,6 +380,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Incident Reporting Form */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">Report an Incident</h2></div>
                 <form onSubmit={submitReport} className="p-4 space-y-3">
@@ -375,25 +399,24 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                   <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 rounded-lg">Submit Report</button>
                 </form>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
-                <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">AI Assistant</h2></div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-60">
-                  {chatMessages.map(m => (
-                    <div key={m.id} className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-xs text-xs px-3 py-2 rounded-2xl leading-relaxed ${m.isUser ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700"}`}>{m.text}</div>
-                    </div>
-                  ))}
-                  <div ref={chatEndRef} />
+
+              {/* Quick AI Trigger Card */}
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-5 text-white flex flex-col justify-between shadow-sm">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-3">
+                    <Icon name="bot" size={22} />
+                  </div>
+                  <h3 className="text-base font-bold">24/7 AI Disaster Assistant</h3>
+                  <p className="text-xs text-blue-100 mt-1 leading-relaxed">
+                    Need instant advice on evacuation shelters, safe routes, or medical help? Open the floating assistant at the bottom right anytime.
+                  </p>
                 </div>
-                <div className="px-4 pb-2 flex gap-1.5 flex-wrap">
-                  {["Nearest shelter","Evacuation route","Weather update"].map(chip => (
-                    <button key={chip} onClick={() => setChatInput(chip)} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-full">{chip}</button>
-                  ))}
-                </div>
-                <div className="p-3 border-t border-slate-100 flex gap-2">
-                  <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendChat()} placeholder="Ask about safety, routes, shelters" className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs" />
-                  <button onClick={sendChat} className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-semibold">Send</button>
-                </div>
+                <button
+                  onClick={() => setIsFloatingChatOpen(true)}
+                  className="mt-4 flex items-center justify-center gap-2 bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs py-2.5 px-4 rounded-lg transition-colors shadow"
+                >
+                  <Icon name="sparkles" size={16} /> Open AI Assistant
+                </button>
               </div>
             </div>
 
@@ -447,6 +470,117 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
         )}
       </main>
+
+      {/* ========================================================================= */}
+      {/* 🤖 FLOATING AI ASSISTANT WIDGET (BOTTOM-RIGHT CIRCLE & EXPANDING WINDOW) */}
+      {/* ========================================================================= */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
+        
+        {/* Floating Chat Window */}
+        {isFloatingChatOpen && (
+          <div className="pointer-events-auto mb-3 w-[92vw] sm:w-[380px] h-[520px] max-h-[75vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all duration-300 ease-out transform translate-y-0 opacity-100">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 p-3.5 text-white flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="relative w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <Icon name="bot" size={18} />
+                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-blue-700 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-sm leading-tight">SurakshaSetu AI</h3>
+                    <span className="bg-blue-500/40 text-[10px] font-semibold px-1.5 py-0.2 rounded text-blue-100">Helper</span>
+                  </div>
+                  <p className="text-[11px] text-blue-100">Online • Wayanad Disaster Desk</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsFloatingChatOpen(false)}
+                className="p-1 rounded-lg hover:bg-white/20 text-white/90 hover:text-white transition-colors"
+                title="Minimize Chat"
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+
+            {/* Chat Messages List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/70">
+              {chatMessages.map(m => (
+                <div key={m.id} className={`flex ${m.isUser ? "justify-end" : "justify-start gap-2"}`}>
+                  {!m.isUser && (
+                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Icon name="bot" size={13} />
+                    </div>
+                  )}
+                  <div className={`max-w-[80%] text-xs px-3.5 py-2.5 rounded-2xl leading-relaxed shadow-sm ${
+                    m.isUser 
+                      ? "bg-blue-600 text-white rounded-br-none" 
+                      : "bg-white text-slate-700 border border-slate-200 rounded-bl-none"
+                  }`}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Quick Action Chips */}
+            <div className="px-3 py-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto no-scrollbar">
+              {["Nearest shelter", "Evacuation route", "Weather update", "Family status"].map(chip => (
+                <button
+                  key={chip}
+                  onClick={() => sendChat(chip)}
+                  className="text-[11px] whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200/60 px-2.5 py-1 rounded-full font-medium transition-colors"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            {/* Input Bar */}
+            <div className="p-3 bg-white border-t border-slate-200 flex gap-2 items-center">
+              <input
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && sendChat()}
+                placeholder="Ask about safety, routes, shelters..."
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+              />
+              <button
+                onClick={() => sendChat()}
+                disabled={!chatInput.trim()}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white p-2 rounded-xl transition-all shadow-sm"
+                title="Send Message"
+              >
+                <Icon name="send" size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Circular Floating Trigger Button (FAB) */}
+        <button
+          onClick={() => setIsFloatingChatOpen(prev => !prev)}
+          className="pointer-events-auto relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 via-blue-600 to-indigo-600 text-white shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none ring-4 ring-white"
+          title={isFloatingChatOpen ? "Close AI Assistant" : "Open AI Assistant"}
+          aria-label="AI Assistant"
+        >
+          {/* Pulsing online indicator badge */}
+          <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
+          </span>
+
+          {/* Icon switches between Bot and Close */}
+          {isFloatingChatOpen ? (
+            <Icon name="x" size={22} />
+          ) : (
+            <div className="flex items-center justify-center">
+              <Icon name="bot" size={26} />
+            </div>
+          )}
+        </button>
+      </div>
     </div>
   );
 };
