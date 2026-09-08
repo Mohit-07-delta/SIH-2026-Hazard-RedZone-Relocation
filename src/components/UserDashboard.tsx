@@ -25,11 +25,9 @@ const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
     report: <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></>,
     phone: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.4 2 2 0 0 1 3.05 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18z"/></>,
     menu: <><path d="M4 6h16M4 12h16M4 18h16"/></>,
-    // Newly Added Icons for Floating AI Assistant
     bot: <><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></>,
     x: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
     send: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
-    sparkles: <><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></>,
   };
   return <svg {...c}>{p[name] ?? p.settings}</svg>;
 };
@@ -109,15 +107,14 @@ function SidebarInner({ activeNav, setActiveNav, setSidebarOpen, onBack }: {
 }
 
 export const UserDashboard: FC<Props> = ({ onBack }) => {
-  const [activeNav, setActiveNav] = useState("Dashboard");
+  const [activeNav, setActiveNav] = useState("Risk Areas");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
 
-  // Floating Chat State
-  const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false);
-
+  // Floating AI Chat State
+  const [isAiOpen, setIsAiOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: 1, text: "Hello! I am your SurakshaSetu AI assistant. How can I help you stay safe today?", isUser: false },
+    { id: 1, text: "Namaste! Main SurakshaSetu AI assistant hoon. Main aapki kya madad kar sakta hoon?", isUser: false },
   ]);
   const [chatInput, setChatInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -127,13 +124,12 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
 
   function getBotReply(t: string): string {
     const l = t.toLowerCase();
-    if (l.includes("safe") && l.includes("place")) return "There are 14 safe shelters within 10 km of Wayanad.";
-    if (l.includes("route") || l.includes("evacuate")) return "Recommended evacuation: NH-766 towards Sultan Bathery.";
-    if (l.includes("weather") || l.includes("rain")) return "Heavy rainfall expected next 48h. IMD orange alert active.";
-    if (l.includes("shelter")) return "Open: Meppadi Community Hall (500 cap), Sultan Bathery Govt. School (800 cap).";
-    if (l.includes("hospital") || l.includes("medical")) return "Wayanad District Hospital (8 km). Call 108 for ambulance.";
-    if (l.includes("family")) return "2 members safe at Meppadi Relief Camp. Arjun location unconfirmed.";
-    return "Please stay calm and follow official instructions. Call 112 for immediate help.";
+    if (l.includes("safe") || l.includes("shelter")) return "Wayanad me 14 safe shelters active hain. Nearest: Meppadi Relief Shelter (1.8 km).";
+    if (l.includes("route") || l.includes("evacuate")) return "Evacuation route NH-766 clear hai towards Sultan Bathery. Chooralmala road avoid karein.";
+    if (l.includes("weather") || l.includes("rain")) return "Heavy rainfall expected hai next 48h. IMD orange alert active hai.";
+    if (l.includes("hospital") || l.includes("medical")) return "Wayanad District Hospital 8 km door hai. Ambulance ke liye 108 dial karein.";
+    if (l.includes("family")) return "Family status: 2 members safe hain Meppadi Relief Camp mein.";
+    return "Surakshit rahein aur official guidelines follow karein. Kisi bhi emergency mein 112 call karein.";
   }
 
   function sendChat(overrideText?: string) {
@@ -157,18 +153,14 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
 
   return (
     <div className="relative flex h-screen bg-slate-100 overflow-hidden font-sans">
-      {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 bg-slate-900 h-full">
         <SidebarInner {...sp} />
       </aside>
-
-      {/* Mobile Drawer */}
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-slate-900 flex flex-col lg:hidden transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <SidebarInner {...sp} />
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100" onClick={() => setSidebarOpen(true)}>
@@ -199,13 +191,6 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                   </div>
                   <button className="bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold">ON</button>
                 </div>
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">Location Sharing</p>
-                    <p className="text-xs text-slate-500 mt-1">Allow SurakshaSetu to use your location.</p>
-                  </div>
-                  <button className="bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold">ON</button>
-                </div>
                 <div>
                   <label className="text-sm font-semibold text-slate-800">Language</label>
                   <select className="mt-2 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
@@ -218,53 +203,22 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
         ) : activeNav === "Safe Places" ? (
           <div className="p-4 space-y-4 max-w-7xl mx-auto">
             <h2 className="text-2xl font-bold text-slate-900">Safe Places</h2>
-            <p className="text-sm text-slate-500">Nearby safe shelters and evacuation locations</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                 <h3 className="font-bold text-slate-800">Meppadi Relief Shelter</h3>
                 <p className="text-sm text-slate-500 mt-1">1.8 km away</p>
                 <span className="inline-block mt-3 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">SAFE</span>
-                <button onClick={() => alert("Directions coming soon")} className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold">Get Directions</button>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                 <h3 className="font-bold text-slate-800">Government High School Shelter</h3>
                 <p className="text-sm text-slate-500 mt-1">3.2 km away</p>
                 <span className="inline-block mt-3 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">SAFE</span>
-                <button onClick={() => alert("Directions coming soon")} className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold">Get Directions</button>
               </div>
-            </div>
-          </div>
-        ) : activeNav === "Alerts" ? (
-          <div className="p-4 space-y-4 max-w-7xl mx-auto">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Active Alerts</h2>
-              <p className="text-sm text-slate-500 mt-1">Current disaster alerts in your area</p>
-            </div>
-            <div className="space-y-3">
-              {ALERTS.map((item, idx) => (
-                <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
-                        <Icon name="warning" size={20} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-800">{item.type}</h3>
-                        <p className="text-sm text-slate-500 mt-1">{item.distance} - {item.time}</p>
-                      </div>
-                    </div>
-                    <Badge level={item.severity} />
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <button onClick={() => alert("Details coming soon")} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">View Details</button>
-                    <button onClick={() => alert("Route coming soon")} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50">Evacuation Route</button>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         ) : (
           <div className="p-4 space-y-4 max-w-7xl mx-auto">
+            {/* Top Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
                 <p className="text-xs text-slate-500 font-medium mb-1">Safety Status</p>
@@ -288,6 +242,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
+            {/* Active Alerts */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-800">Active Alerts</h2>
@@ -314,6 +269,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
+            {/* Map Area */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-sm font-bold text-slate-800">Live Hazard and Safety Map</h2>
@@ -333,54 +289,8 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
+            {/* Incident & Family Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">High-Risk Settlements</h2></div>
-                <ul className="divide-y divide-slate-100">
-                  {SETTLEMENTS.map((s, i) => (
-                    <li key={i} className="px-4 py-3 flex items-center justify-between">
-                      <div><p className="text-sm font-medium text-slate-800">{s.name}</p><p className="text-xs text-slate-400">{s.exposed.toLocaleString()} residents</p></div>
-                      <Badge level={s.risk} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">Recommended Relocation Site</h2></div>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div><p className="text-sm font-bold text-slate-800">Sultan Bathery Govt. HSS</p><p className="text-xs text-slate-500">18 km away</p></div>
-                    <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Open</span>
-                  </div>
-                  <div><div className="flex justify-between text-xs text-slate-500 mb-1"><span>Capacity</span><span>520 / 800</span></div>
-                    <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: "65%" }} /></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {[{l:"Food",v:"Available",c:"text-green-600"},{l:"Medical",v:"On-site",c:"text-green-600"},{l:"Water",v:"Available",c:"text-green-600"},{l:"Transport",v:"Limited",c:"text-amber-600"}].map(x => (
-                      <div key={x.l} className="bg-slate-50 rounded-lg p-2 text-center"><p className="text-slate-400">{x.l}</p><p className={`font-semibold ${x.c}`}>{x.v}</p></div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h2 className="text-sm font-bold text-slate-800 mb-3">Safe Relocation Route</h2>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-700"><span className="font-semibold">From:</span> Meppadi <span className="mx-1 text-slate-300">to</span> <span className="font-semibold">Sultan Bathery Govt. HSS</span></p>
-                  <p className="text-xs text-slate-500">Via NH-766 - 18 km - Est. 35 min - <span className="text-green-600 font-medium">Clear</span></p>
-                  <p className="text-xs text-red-500 font-medium">Avoid: Mundakkai-Chooralmala road (active landslide)</p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg">Get Directions</button>
-                  <button className="text-blue-600 hover:underline text-xs text-center">View alternative route</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Incident Reporting Form */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">Report an Incident</h2></div>
                 <form onSubmit={submitReport} className="p-4 space-y-3">
@@ -389,7 +299,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                     <label className="text-xs text-slate-500 font-medium mb-1 block">Incident Type</label>
                     <select value={reportType} onChange={e => setReportType(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
                       <option value="">Select type</option><option>Landslide</option><option>Flash Flood</option>
-                      <option>Road Blocked</option><option>Person Missing</option><option>Other</option>
+                      <option>Road Blocked</option><option>Person Missing</option>
                     </select>
                   </div>
                   <div>
@@ -400,27 +310,6 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                 </form>
               </div>
 
-              {/* Quick AI Trigger Card */}
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-5 text-white flex flex-col justify-between shadow-sm">
-                <div>
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-3">
-                    <Icon name="bot" size={22} />
-                  </div>
-                  <h3 className="text-base font-bold">24/7 AI Disaster Assistant</h3>
-                  <p className="text-xs text-blue-100 mt-1 leading-relaxed">
-                    Need instant advice on evacuation shelters, safe routes, or medical help? Open the floating assistant at the bottom right anytime.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsFloatingChatOpen(true)}
-                  className="mt-4 flex items-center justify-center gap-2 bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs py-2.5 px-4 rounded-lg transition-colors shadow"
-                >
-                  <Icon name="sparkles" size={16} /> Open AI Assistant
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                   <h2 className="text-sm font-bold text-slate-800">My Family</h2>
@@ -442,22 +331,9 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                   ))}
                 </ul>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">Resources</h2></div>
-                <ul className="divide-y divide-slate-100">
-                  {RESOURCES.map((r, i) => (
-                    <li key={i}>
-                      <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-left">
-                        <span className="text-slate-500"><Icon name={r.icon} size={18} /></span>
-                        <span className="text-sm text-slate-700 font-medium">{r.label}</span>
-                        <span className="ml-auto text-slate-300">›</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
+            {/* Contacts */}
             <div className="bg-slate-800 rounded-xl p-4">
               <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-3">Emergency Contacts</p>
               <div className="flex flex-wrap gap-2">
@@ -466,56 +342,66 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                 ))}
               </div>
             </div>
-            <div className="h-4" />
           </div>
         )}
       </main>
 
       {/* ========================================================================= */}
-      {/* 🤖 FLOATING AI ASSISTANT WIDGET (BOTTOM-RIGHT CIRCLE & EXPANDING WINDOW) */}
+      {/* 🚀 100% VISIBLE FLOATING AI ASSISTANT BUTTON & CHAT WINDOW (RIGHT CORNER) */}
       {/* ========================================================================= */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
-        
-        {/* Floating Chat Window */}
-        {isFloatingChatOpen && (
-          <div className="pointer-events-auto mb-3 w-[92vw] sm:w-[380px] h-[520px] max-h-[75vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all duration-300 ease-out transform translate-y-0 opacity-100">
+      <div 
+        style={{ 
+          position: "fixed", 
+          bottom: "24px", 
+          right: "24px", 
+          zIndex: 99999,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end"
+        }}
+      >
+        {/* Floating Chat Popup Window */}
+        {isAiOpen && (
+          <div 
+            style={{
+              width: "360px",
+              maxWidth: "calc(100vw - 32px)",
+              height: "480px",
+              maxHeight: "75vh",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.25)"
+            }}
+            className="mb-4 bg-white rounded-2xl border border-slate-200 flex flex-col overflow-hidden"
+          >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 p-3.5 text-white flex items-center justify-between shadow-sm">
+            <div className="bg-blue-600 p-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="relative w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <Icon name="bot" size={18} />
-                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-blue-700 animate-pulse" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-sm leading-tight">SurakshaSetu AI</h3>
-                    <span className="bg-blue-500/40 text-[10px] font-semibold px-1.5 py-0.2 rounded text-blue-100">Helper</span>
-                  </div>
-                  <p className="text-[11px] text-blue-100">Online • Wayanad Disaster Desk</p>
+                  <h3 className="font-bold text-sm leading-none">SurakshaSetu AI</h3>
+                  <p className="text-[11px] text-blue-100 mt-1 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse"></span>
+                    24/7 Disaster Support
+                  </p>
                 </div>
               </div>
               <button
-                onClick={() => setIsFloatingChatOpen(false)}
-                className="p-1 rounded-lg hover:bg-white/20 text-white/90 hover:text-white transition-colors"
-                title="Minimize Chat"
+                onClick={() => setIsAiOpen(false)}
+                className="p-1 rounded-lg hover:bg-white/20 text-white transition-colors"
               >
                 <Icon name="x" size={18} />
               </button>
             </div>
 
-            {/* Chat Messages List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/70">
+            {/* Chat Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
               {chatMessages.map(m => (
-                <div key={m.id} className={`flex ${m.isUser ? "justify-end" : "justify-start gap-2"}`}>
-                  {!m.isUser && (
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Icon name="bot" size={13} />
-                    </div>
-                  )}
+                <div key={m.id} className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] text-xs px-3.5 py-2.5 rounded-2xl leading-relaxed shadow-sm ${
                     m.isUser 
-                      ? "bg-blue-600 text-white rounded-br-none" 
-                      : "bg-white text-slate-700 border border-slate-200 rounded-bl-none"
+                      ? "bg-blue-600 text-white" 
+                      : "bg-white text-slate-800 border border-slate-200"
                   }`}>
                     {m.text}
                   </div>
@@ -524,13 +410,13 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Quick Action Chips */}
-            <div className="px-3 py-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto no-scrollbar">
-              {["Nearest shelter", "Evacuation route", "Weather update", "Family status"].map(chip => (
+            {/* Quick Chips */}
+            <div className="p-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto">
+              {["Nearest shelter", "Evacuation route", "Weather alert"].map(chip => (
                 <button
                   key={chip}
                   onClick={() => sendChat(chip)}
-                  className="text-[11px] whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200/60 px-2.5 py-1 rounded-full font-medium transition-colors"
+                  className="text-[11px] whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium"
                 >
                   {chip}
                 </button>
@@ -538,46 +424,45 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Input Bar */}
-            <div className="p-3 bg-white border-t border-slate-200 flex gap-2 items-center">
+            <div className="p-3 bg-white border-t border-slate-200 flex gap-2">
               <input
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendChat()}
-                placeholder="Ask about safety, routes, shelters..."
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                placeholder="Ask SurakshaSetu AI..."
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
               />
               <button
                 onClick={() => sendChat()}
-                disabled={!chatInput.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white p-2 rounded-xl transition-all shadow-sm"
-                title="Send Message"
+                className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl flex items-center justify-center"
               >
-                <Icon name="send" size={16} />
+                <Icon name="send" size={15} />
               </button>
             </div>
           </div>
         )}
 
-        {/* Circular Floating Trigger Button (FAB) */}
+        {/* Floating Circle Button */}
         <button
-          onClick={() => setIsFloatingChatOpen(prev => !prev)}
-          className="pointer-events-auto relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 via-blue-600 to-indigo-600 text-white shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none ring-4 ring-white"
-          title={isFloatingChatOpen ? "Close AI Assistant" : "Open AI Assistant"}
-          aria-label="AI Assistant"
+          onClick={() => setIsAiOpen(prev => !prev)}
+          style={{
+            width: "58px",
+            height: "58px",
+            borderRadius: "50%",
+            boxShadow: "0 10px 25px rgba(37, 99, 235, 0.45)"
+          }}
+          className="relative bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-white"
         >
-          {/* Pulsing online indicator badge */}
-          <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+          {/* Green Pulse Dot */}
+          <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
           </span>
 
-          {/* Icon switches between Bot and Close */}
-          {isFloatingChatOpen ? (
-            <Icon name="x" size={22} />
+          {isAiOpen ? (
+            <Icon name="x" size={24} />
           ) : (
-            <div className="flex items-center justify-center">
-              <Icon name="bot" size={26} />
-            </div>
+            <Icon name="bot" size={28} />
           )}
         </button>
       </div>
