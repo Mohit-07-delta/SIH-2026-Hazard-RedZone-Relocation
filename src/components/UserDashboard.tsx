@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, type FC, type ReactNode, type FormEvent } from "react";
 
 // ==========================================
-// 🎨 SVG ICONS COMPONENT
+// 🎨 SVG ICONS
 // ==========================================
 const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
   const c = { 
@@ -28,7 +28,6 @@ const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
     report: <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></>,
     phone: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.4 2 2 0 0 1 3.05 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18z"/></>,
     menu: <><path d="M4 6h16M4 12h16M4 18h16"/></>,
-    sparkles: <><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/><path d="M19 3v4M21 5h-4"/></>,
     close: <><path d="M18 6 6 18M6 6l12 12"/></>,
     send: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
     bot: <><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M12 8V4M8 4h8M2 14h2M20 14h2M9 13v2M15 13v2"/></>,
@@ -36,297 +35,11 @@ const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
   return <svg {...c}>{p[name] ?? p.settings}</svg>;
 };
 
-// ==========================================
-// 🤖 REAL FLOATING AI ASSISTANT WIDGET
-// (Crisp / Intercom style bottom-right widget)
-// ==========================================
-export const FloatingAIAssistant: FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showGreeting, setShowGreeting] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Array<{ id: number; text: string; isBot: boolean; time: string }>>([
-    {
-      id: 1,
-      text: "Namaste! 🙏 Main SurakshaSetu AI assistant hoon. Wayanad hazard alerts, safe shelters, ya evacuation routes ke baare me kuch bhi poochiye!",
-      isBot: true,
-      time: "Just now",
-    },
-  ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 150);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
-
-  const quickPrompts = [
-    "📍 Nearest Safe Shelter",
-    "🚨 Evacuation Route",
-    "🌧️ Weather Update",
-    "📞 Emergency Contacts",
-  ];
-
-  function getAiResponse(query: string): string {
-    const q = query.toLowerCase();
-    if (q.includes("shelter") || q.includes("safe place") || q.includes("safe")) {
-      return "Wayanad me 14 safe shelters open hain. Sabse paas Meppadi Relief Shelter (1.8 km) aur Sultan Bathery Govt. School (18 km, capacity 800) hai.";
-    }
-    if (q.includes("route") || q.includes("evacuate") || q.includes("road")) {
-      return "Evacuation ke liye NH-766 towards Sultan Bathery 100% CLEAR hai (approx 35 min). Kripya Mundakkai-Chooralmala road avoid karein waha landslide hui hai.";
-    }
-    if (q.includes("weather") || q.includes("rain")) {
-      return "IMD Orange Alert jari hai. Agle 48 ghante me heavy rainfall expected hai. River banks aur steep slopes se door rahein.";
-    }
-    if (q.includes("contact") || q.includes("number") || q.includes("help") || q.includes("phone")) {
-      return "Emergency helpline numbers:\n• Police & Disaster: 112\n• Ambulance: 108\n• NDMA: 1800-180-7188\n• Kerala SDMA: 1070";
-    }
-    if (q.includes("family")) {
-      return "Family tracking status: Rajan (Father) aur Suma (Mother) safe hain Meppadi Relief Camp me. Arjun ki location verify ki ja rahi hai.";
-    }
-    return "Aapki suraksha sabse pehle hai. Kripya unche aur pakke sthan par rahein. Kisi bhi tatkal sahayata ke liye turant 112 dial karein.";
-  }
-
-  function handleSend(textToSend?: string) {
-    const msg = (textToSend ?? input).trim();
-    if (!msg) return;
-
-    const userMsg = {
-      id: Date.now(),
-      text: msg,
-      isBot: false,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setIsTyping(true);
-
-    // Realistic bot response delay with typing animation
-    setTimeout(() => {
-      const reply = getAiResponse(msg);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          text: reply,
-          isBot: true,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-      setIsTyping(false);
-    }, 650);
-  }
-
-  return (
-    <aside 
-      aria-label="AI Assistant"
-      style={{
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        zIndex: 999999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-end",
-      }}
-    >
-      {/* 1. CHAT POPUP WINDOW (SLIDES UP ON CLICK) */}
-      {isOpen && (
-        <div
-          style={{
-            width: "380px",
-            maxWidth: "calc(100vw - 32px)",
-            height: "530px",
-            maxHeight: "calc(100vh - 120px)",
-            boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05)",
-          }}
-          className="mb-4 bg-white rounded-3xl flex flex-col overflow-hidden border border-slate-200/80 transition-all duration-300"
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-4 text-white flex items-center justify-between shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center border border-white/20">
-                <Icon name="bot" size={22} />
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-indigo-700 rounded-full animate-pulse" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="font-bold text-sm tracking-wide">SurakshaSetu AI</h2>
-                  <span className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    24/7
-                  </span>
-                </div>
-                <p className="text-[11px] text-blue-100 flex items-center gap-1.5 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  Wayanad Emergency Support
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 hover:text-white transition-colors"
-                title="Minimize"
-              >
-                <Icon name="close" size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50/70">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`flex flex-col ${m.isBot ? "items-start" : "items-end"}`}
-              >
-                <div className={`flex gap-2 max-w-[85%] ${m.isBot ? "flex-row" : "flex-row-reverse"}`}>
-                  {m.isBot && (
-                    <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-xs shadow-sm mt-0.5">
-                      <Icon name="sparkles" size={14} />
-                    </div>
-                  )}
-                  <div
-                    className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-line shadow-sm ${
-                      m.isBot
-                        ? "bg-white text-slate-800 border border-slate-200/80 rounded-tl-none"
-                        : "bg-blue-600 text-white rounded-tr-none font-medium"
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                </div>
-                <span className="text-[10px] text-slate-400 mt-1 px-1">{m.time}</span>
-              </div>
-            ))}
-
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
-                  <Icon name="sparkles" size={14} />
-                </div>
-                <div className="bg-white border border-slate-200 px-3 py-2 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" />
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick Prompts Chips */}
-          <div className="px-3 py-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto no-scrollbar">
-            {quickPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                onClick={() => handleSend(prompt)}
-                className="text-[11px] whitespace-nowrap bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200 hover:border-blue-300 px-3 py-1.5 rounded-full font-medium transition-all"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-
-          {/* Input Box */}
-          <div className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Ask anything about disaster safety..."
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim()}
-              className="w-9 h-9 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-md active:scale-95 flex-shrink-0"
-              title="Send Message"
-            >
-              <Icon name="send" size={15} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 2. PROACTIVE GREETING TOOLTIP (BEFORE USER CLICKS) */}
-      {!isOpen && showGreeting && (
-        <div
-          onClick={() => {
-            setIsOpen(true);
-            setShowGreeting(false);
-          }}
-          className="mb-3 cursor-pointer bg-white text-slate-800 text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-xl border border-slate-200 flex items-center gap-2.5 hover:shadow-2xl hover:scale-105 transition-all"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <span>👋 Need help? Ask SurakshaSetu AI</span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowGreeting(false);
-            }}
-            className="text-slate-400 hover:text-slate-700 ml-1 p-0.5"
-            title="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* 3. FLOATING CIRCULAR LAUNCHER BUTTON (ALWAYS VISIBLE BOTTOM-RIGHT) */}
-      <button
-        onClick={() => {
-          setIsOpen((prev) => !prev);
-          setShowGreeting(false);
-        }}
-        style={{
-          width: "62px",
-          height: "62px",
-          borderRadius: "50%",
-          boxShadow: "0 12px 30px rgba(37, 99, 235, 0.45), 0 4px 12px rgba(0,0,0,0.15)",
-        }}
-        className="relative bg-gradient-to-tr from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center transition-all duration-300 hover:scale-108 active:scale-95 cursor-pointer ring-4 ring-white"
-        aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
-      >
-        {/* Pulsing Green Online Status Ring */}
-        <span className="absolute top-0.5 right-0.5 flex h-4 w-4">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white" />
-        </span>
-
-        {/* Icon toggle (AI Sparkles vs Close X) */}
-        {isOpen ? (
-          <div className="transition-transform duration-200 rotate-90">
-            <Icon name="close" size={26} />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center transition-transform duration-200">
-            <Icon name="sparkles" size={28} />
-          </div>
-        )}
-      </button>
-    </aside>
-  );
-};
-
-// ==========================================
-// 📊 USER DASHBOARD COMPONENT
-// ==========================================
 interface Props { onBack: () => void; }
 interface AlertItem { type: string; severity: "High" | "Moderate" | "Low"; distance: string; time: string; }
 interface Settlement { name: string; exposed: number; risk: "Critical" | "High" | "Moderate"; }
 interface FamilyMember { name: string; initials: string; status: "Safe" | "Unknown"; location: string; }
+interface ChatMessage { id: number; text: string; isBot: boolean; time: string; }
 
 const ALERTS: AlertItem[] = [
   { type: "Landslide", severity: "High", distance: "2.4 km", time: "10 min ago" },
@@ -400,9 +113,86 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
+
+  // Report Form state
   const [reportType, setReportType] = useState("");
   const [reportDesc, setReportDesc] = useState("");
   const [reportSubmitted, setReportSubmitted] = useState(false);
+
+  // ==========================================
+  // 🤖 FLOATING AI ASSISTANT STATE
+  // ==========================================
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      text: "Namaste! 🙏 Main SurakshaSetu AI assistant hoon. Wayanad safe shelters, evacuation routes ya weather alert ke baare me poochiye!",
+      isBot: true,
+      time: "Just now",
+    },
+  ]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isAiOpen) {
+      setTimeout(() => chatInputRef.current?.focus(), 150);
+    }
+  }, [isAiOpen]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages, isTyping]);
+
+  function getBotReply(t: string): string {
+    const l = t.toLowerCase();
+    if (l.includes("shelter") || l.includes("safe") || l.includes("place")) {
+      return "Wayanad me 14 shelters active hain:\n• Meppadi Relief Shelter (1.8 km)\n• Sultan Bathery Govt. School (18 km, capacity 800)";
+    }
+    if (l.includes("route") || l.includes("evacuate") || l.includes("road")) {
+      return "Evacuation ke liye NH-766 towards Sultan Bathery bilkul clear hai. Mundakkai-Chooralmala road avoid karein.";
+    }
+    if (l.includes("weather") || l.includes("rain")) {
+      return "IMD Orange alert active hai. Agle 48 ghante me heavy rainfall expected hai. Slopes aur nadiyo se door rahein.";
+    }
+    if (l.includes("family")) {
+      return "Family Status: Rajan & Suma safe hain Meppadi Relief Camp me. Arjun ki location check ki ja rahi hai.";
+    }
+    return "Surakshit sthan par rahein. Kisi bhi emergency mein 112 ya Ambulance ke liye 108 dial karein.";
+  }
+
+  function sendChat(overrideText?: string) {
+    const text = (overrideText ?? chatInput).trim();
+    if (!text) return;
+
+    const userMsg: ChatMessage = {
+      id: Date.now(),
+      text,
+      isBot: false,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput("");
+    setIsTyping(true);
+
+    // Realistic bot typing delay
+    setTimeout(() => {
+      const reply = getBotReply(text);
+      setChatMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: reply,
+          isBot: true,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      setIsTyping(false);
+    }, 600);
+  }
 
   function submitReport(e: FormEvent) {
     e.preventDefault();
@@ -420,13 +210,13 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
         <SidebarInner {...sp} />
       </aside>
 
-      {/* Mobile Drawer */}
+      {/* Sidebar Mobile */}
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-slate-900 flex flex-col lg:hidden transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <SidebarInner {...sp} />
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100" onClick={() => setSidebarOpen(true)}>
@@ -484,7 +274,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
         ) : (
           <div className="p-4 space-y-4 max-w-7xl mx-auto">
-            {/* Top 4 Metrics Cards */}
+            {/* Top Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
                 <p className="text-xs text-slate-500 font-medium mb-1">Safety Status</p>
@@ -508,7 +298,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Active Alerts Table */}
+            {/* Active Alerts */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-800">Active Alerts</h2>
@@ -535,7 +325,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Interactive Map Placeholder */}
+            {/* Map Area */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-sm font-bold text-slate-800">Live Hazard and Safety Map</h2>
@@ -555,7 +345,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Settlements & Relocation */}
+            {/* High-Risk Settlements & Relocation */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">High-Risk Settlements</h2></div>
@@ -603,7 +393,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Report an Incident Form & Family */}
+            {/* 🛑 DEKHIYE: YAHAN SE PURANA AI ASSISTANT WALA DABBA DELETE KAR DIYA HAI */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">Report an Incident</h2></div>
@@ -682,9 +472,160 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
       </main>
 
       {/* ========================================================================= */}
-      {/* 🤖 MODERN FLOATING AI ASSISTANT (INTERCOM / CRISP STYLE WIDGET) */}
+      {/* 🚀 REAL FLOATING CIRCULAR AI ASSISTANT (RIGHT BOTTOM CORNER)              */}
       {/* ========================================================================= */}
-      <FloatingAIAssistant />
+      <div
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          zIndex: 9999999,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+        }}
+      >
+        {/* Floating Chat Popup Window (Khulta hai jab circle click hota hai) */}
+        {isAiOpen && (
+          <div
+            style={{
+              width: "380px",
+              maxWidth: "calc(100vw - 32px)",
+              height: "520px",
+              maxHeight: "calc(100vh - 120px)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+            }}
+            className="mb-4 bg-white rounded-3xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
+          >
+            {/* Popup Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="relative w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white">
+                  <Icon name="bot" size={20} />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 ring-2 ring-indigo-600 rounded-full animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm leading-tight">SurakshaSetu AI</h3>
+                  <p className="text-[11px] text-blue-100 flex items-center gap-1.5 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Online • 24/7 Disaster Support
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAiOpen(false)}
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                title="Close"
+              >
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+
+            {/* Popup Messages Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/70">
+              {chatMessages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`flex flex-col ${m.isBot ? "items-start" : "items-end"}`}
+                >
+                  <div className={`flex gap-2 max-w-[85%] ${m.isBot ? "flex-row" : "flex-row-reverse"}`}>
+                    {m.isBot && (
+                      <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 text-xs mt-0.5">
+                        <Icon name="bot" size={14} />
+                      </div>
+                    )}
+                    <div
+                      className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-line shadow-sm ${
+                        m.isBot
+                          ? "bg-white text-slate-800 border border-slate-200/80 rounded-tl-none"
+                          : "bg-blue-600 text-white rounded-tr-none font-medium"
+                      }`}
+                    >
+                      {m.text}
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1 px-1">{m.time}</span>
+                </div>
+              ))}
+
+              {/* Typing animation */}
+              {isTyping && (
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
+                    <Icon name="bot" size={14} />
+                  </div>
+                  <div className="bg-white border border-slate-200 px-3 py-2 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" />
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Suggestions Chips */}
+            <div className="px-3 py-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto no-scrollbar">
+              {["Nearest shelter", "Evacuation route", "Weather update"].map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => sendChat(chip)}
+                  className="text-[11px] whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded-full font-medium transition-colors"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            {/* Input Form */}
+            <div className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
+              <input
+                ref={chatInputRef}
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendChat()}
+                placeholder="Ask about disaster safety, shelters..."
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
+              />
+              <button
+                onClick={() => sendChat()}
+                disabled={!chatInput.trim()}
+                className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-md flex-shrink-0"
+              >
+                <Icon name="send" size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 🔵 THE FLOATING CIRCLE AI BUTTON (CLICK TO OPEN/CLOSE) */}
+        <button
+          onClick={() => setIsAiOpen((prev) => !prev)}
+          style={{
+            width: "60px",
+            height: "60px",
+            borderRadius: "50%",
+            boxShadow: "0 10px 25px rgba(37, 99, 235, 0.45)",
+          }}
+          className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-white"
+          title={isAiOpen ? "Close AI Assistant" : "Open AI Assistant"}
+          aria-label="AI Assistant"
+        >
+          {/* Live Online Green Dot */}
+          <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white" />
+          </span>
+
+          {/* Icon (Bot / Close X) */}
+          {isAiOpen ? (
+            <Icon name="close" size={24} />
+          ) : (
+            <Icon name="bot" size={28} />
+          )}
+        </button>
+      </div>
     </div>
   );
 };
