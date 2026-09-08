@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, type FC, type ReactNode, type FormEvent } from "react";
 
 // ==========================================================================
-// SurakshaSetu — resident dashboard
-// Visual identity: "beacon to safety" — deep forest-teal ink, warm signal-amber
-// accent, terrain contour motifs (grounded in the hazard-mapping subject).
+// SurakshaSetu — Pan-India Resident Safety & Disaster Management Dashboard
+// Visual identity: "Beacon to safety" — Forest-teal ink, signal amber, 
+// terrain contour motifs, designed with authentic human craft.
 // ==========================================================================
 
 const FONT_STYLES = `
@@ -29,7 +29,7 @@ const FONT_STYLES = `
     font-family: 'Inter', sans-serif;
     color: var(--ink);
   }
-  .ss-root .ss-display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.01em; }
+  .ss-root .ss-display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.015em; }
   .ss-root .ss-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
   .ss-contours {
@@ -40,7 +40,7 @@ const FONT_STYLES = `
 
   .ss-beacon {
     box-shadow: 0 0 0 0 rgba(201, 122, 30, 0.55);
-    animation: ss-beacon-pulse 2.6s ease-out 1;
+    animation: ss-beacon-pulse 2.6s ease-out infinite;
   }
   @keyframes ss-beacon-pulse {
     0% { box-shadow: 0 0 0 0 rgba(201, 122, 30, 0.5); }
@@ -48,7 +48,7 @@ const FONT_STYLES = `
     100% { box-shadow: 0 0 0 0 rgba(201, 122, 30, 0); }
   }
 
-  .ss-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .ss-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
   .ss-scrollbar::-webkit-scrollbar-thumb { background: #C9C3AF; border-radius: 4px; }
   .ss-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
@@ -57,13 +57,17 @@ const FONT_STYLES = `
     outline-offset: 2px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ss-beacon, .ss-pulse-dot { animation: none !important; }
+  @keyframes ss-slide-up {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .ss-animate-in {
+    animation: ss-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 `;
 
 // ==========================================
-// ICONS
+// 🎨 HANDCRAFTED ICON PACK
 // ==========================================
 const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
   const c = {
@@ -99,37 +103,34 @@ const Icon = ({ name, size = 18 }: { name: string; size?: number }) => {
     truck: <><rect x="1" y="7" width="13" height="10" rx="1" /><path d="M14 10h4l3 3v4h-7z" /><circle cx="5.5" cy="18.5" r="1.5" /><circle cx="17.5" cy="18.5" r="1.5" /></>,
     pin: <><path d="M12 21s7-6.3 7-11.5A7 7 0 0 0 5 9.5C5 14.7 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.3" /></>,
     users: <><circle cx="9" cy="7" r="3" /><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /><path d="M17 4.6a3 3 0 0 1 0 5.8" /><path d="M20.5 20c0-2.6-1.9-4.7-4.5-5.6" /></>,
+    sparkles: <><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" /></>,
+    volume: <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" /></>,
+    check: <><polyline points="20 6 9 17 4 12" /></>,
+    download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>,
+    play: <><polygon points="5 3 19 12 5 21 5 3" /></>,
   };
   return <svg {...c}>{p[name] ?? p.settings}</svg>;
 };
 
-interface Props { onBack?: () => void; }
-interface AlertItem { type: string; severity: "High" | "Moderate" | "Low"; distance: string; time: string; icon: string; }
-interface Settlement { name: string; exposed: number; risk: "Critical" | "High" | "Moderate"; }
-interface FamilyMember { name: string; initials: string; status: "Safe" | "Unknown"; location: string; }
-interface ChatMessage { id: number; text: string; isBot: boolean; time: string; }
+// ==========================================
+// 🇮🇳 PAN-INDIA DATA REPOSITORY
+// ==========================================
+interface IndianRegion {
+  id: string;
+  name: string;
+  state: string;
+  hazardType: string;
+  alertLevel: "Critical" | "High" | "Moderate" | "Low";
+  weatherCondition: string;
+  sheltersCount: number;
+}
 
-const ALERTS: AlertItem[] = [
-  { type: "Landslide", severity: "High", distance: "2.4 km", time: "10 min ago", icon: "warning" },
-  { type: "Flash Flood", severity: "Moderate", distance: "5.1 km", time: "32 min ago", icon: "droplet" },
-  { type: "Rockfall", severity: "Low", distance: "8.7 km", time: "1 hr ago", icon: "shield" },
-];
-const SETTLEMENTS: Settlement[] = [
-  { name: "Mundakkai Colony", exposed: 312, risk: "Critical" },
-  { name: "Chooralmala Village", exposed: 480, risk: "Critical" },
-  { name: "Attamala Ward", exposed: 215, risk: "High" },
-  { name: "Puthumala Hill Area", exposed: 178, risk: "High" },
-];
-const FAMILY: FamilyMember[] = [
-  { name: "Rajan (Father)", initials: "RK", status: "Safe", location: "Meppadi Relief Camp" },
-  { name: "Suma (Mother)", initials: "SK", status: "Safe", location: "Meppadi Relief Camp" },
-  { name: "Arjun (Brother)", initials: "AK", status: "Unknown", location: "Last seen Chooralmala" },
-];
-const ROUTE_STOPS = [
-  { label: "Meppadi", sub: "Starting point", state: "done" as const },
-  { label: "NH-766", sub: "18 km · clear stretch", state: "done" as const },
-  { label: "Mundakkai–Chooralmala Rd", sub: "Active landslide · avoided", state: "danger" as const },
-  { label: "Sultan Bathery Govt. HSS", sub: "Est. 35 min · destination", state: "target" as const },
+const REGIONS: IndianRegion[] = [
+  { id: "wayanad", name: "Wayanad", state: "Kerala", hazardType: "Landslide & Inundation", alertLevel: "High", weatherCondition: "Heavy Monsoonal Rain (IMD Orange)", sheltersCount: 14 },
+  { id: "chamoli", name: "Chamoli (Joshimath)", state: "Uttarakhand", hazardType: "Flash Flood & Slope Subsidence", alertLevel: "Critical", weatherCondition: "Torrential Downpour (IMD Red)", sheltersCount: 9 },
+  { id: "puri", name: "Puri Coastal", state: "Odisha", hazardType: "Cyclonic Surge (Bay of Bengal)", alertLevel: "Moderate", weatherCondition: "Squally Winds 65 km/h", sheltersCount: 22 },
+  { id: "guwahati", name: "Brahmaputra Basin", state: "Assam", hazardType: "Riverine Floods", alertLevel: "High", weatherCondition: "Water levels above danger mark", sheltersCount: 19 },
+  { id: "shimla", name: "Shimla & Mandi", state: "Himachal Pradesh", hazardType: "Cloudburst & Road Blockage", alertLevel: "Moderate", weatherCondition: "Active Western Disturbance", sheltersCount: 11 },
 ];
 
 const NAV_ITEMS = [
@@ -141,14 +142,6 @@ const NAV_ITEMS = [
   { label: "Resources", icon: "book" },
   { label: "Disaster Simulation", icon: "simulation" },
   { label: "Settings", icon: "settings" },
-];
-
-const MAP_FILTERS = ["All", "Hazards", "Safe Sites", "Shelters", "Hospitals"];
-const RESOURCES = [
-  { icon: "report", label: "NDMA Evacuation Guidelines" },
-  { icon: "map", label: "Wayanad District Hazard Map" },
-  { icon: "shield", label: "Nearby Medical Facilities" },
-  { icon: "phone", label: "Emergency Contact Directory" },
 ];
 
 const SEVERITY_STYLE: Record<string, { text: string; bg: string; dot: string }> = {
@@ -164,7 +157,7 @@ function Badge({ level }: { level: string }) {
   const s = SEVERITY_STYLE[level] ?? SEVERITY_STYLE.Low;
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap"
       style={{ color: s.text, background: s.bg }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.dot }} />
@@ -174,15 +167,15 @@ function Badge({ level }: { level: string }) {
 }
 
 // ==========================================
-// ILLUSTRATED HAZARD MAP (no external map lib)
+// 🗺️ ILLUSTRATED MAP COMPONENT
 // ==========================================
-function HazardMap({ filter }: { filter: string }) {
+function HazardMap({ filter, region }: { filter: string; region: IndianRegion }) {
   const showHazards = filter === "All" || filter === "Hazards";
   const showShelters = filter === "All" || filter === "Shelters" || filter === "Safe Sites";
   const showHospitals = filter === "All" || filter === "Hospitals";
 
   return (
-    <svg viewBox="0 0 720 320" className="w-full h-full" role="img" aria-label="Illustrated hazard map of Wayanad district">
+    <svg viewBox="0 0 720 320" className="w-full h-full" role="img" aria-label={`Hazard Map for ${region.name}`}>
       <defs>
         <linearGradient id="ss-terrain" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#EFEAD9" />
@@ -196,7 +189,6 @@ function HazardMap({ filter }: { filter: string }) {
 
       <rect x="0" y="0" width="720" height="320" fill="url(#ss-terrain)" />
 
-      {/* contour lines — terrain of the Western Ghats */}
       {[40, 75, 112, 150, 190, 232, 276].map((y, i) => (
         <path
           key={y}
@@ -208,10 +200,8 @@ function HazardMap({ filter }: { filter: string }) {
         />
       ))}
 
-      {/* river / backwater ribbon */}
       <path d="M 30 260 C 160 230, 210 280, 340 250 S 560 200, 700 235" fill="none" stroke="#0E6B62" strokeOpacity="0.35" strokeWidth="7" strokeLinecap="round" />
 
-      {/* hazard red-zone */}
       {showHazards && (
         <g>
           <circle cx="255" cy="130" r="78" fill="url(#ss-hazard-glow)" />
@@ -224,79 +214,98 @@ function HazardMap({ filter }: { filter: string }) {
             strokeWidth="1.5"
             strokeDasharray="4 3"
           />
-          <text x="252" y="132" textAnchor="middle" fontSize="11" fontWeight={700} fill="#8C1B15">Mundakkai</text>
-          <text x="252" y="146" textAnchor="middle" fontSize="9" fill="#8C1B15" fillOpacity={0.85}>Landslide red-zone</text>
+          <text x="252" y="132" textAnchor="middle" fontSize="11" fontWeight={700} fill="#8C1B15">{region.name} Red Zone</text>
+          <text x="252" y="146" textAnchor="middle" fontSize="9" fill="#8C1B15" fillOpacity={0.85}>{region.hazardType}</text>
         </g>
       )}
 
-      {/* evacuation route */}
-      <path
-        d="M 300 168 C 360 190, 420 176, 470 190 C 530 206, 580 190, 616 168"
-        fill="none"
-        stroke="#0E6B62"
-        strokeWidth="3"
-        strokeDasharray="1 9"
-        strokeLinecap="round"
-      />
+      <path d="M 300 168 C 360 190, 420 176, 470 190 C 530 206, 580 190, 616 168" fill="none" stroke="#0E6B62" strokeWidth="3" strokeDasharray="1 9" strokeLinecap="round" />
 
-      {/* you-are-here marker */}
       <g transform="translate(300 168)">
         <circle r="9" fill="#0E6B62" fillOpacity="0.18" />
         <circle r="4.5" fill="#0E6B62" stroke="#FFFFFF" strokeWidth="1.5" />
       </g>
-      <text x="300" y="192" textAnchor="middle" fontSize="9.5" fontWeight={600} fill="#16302B">Meppadi</text>
+      <text x="300" y="192" textAnchor="middle" fontSize="9.5" fontWeight={600} fill="#16302B">Your Point</text>
 
-      {/* shelters */}
       {showShelters && (
         <g fill="#34724A">
           <g transform="translate(616 168)">
             <path d="M0 -11 C6 -11 10 -6 10 0 C10 7 4 12 0 16 C-4 12 -10 7 -10 0 C-10 -6 -6 -11 0 -11Z" />
             <circle r="3" fill="#fff" />
           </g>
-          <text x="616" y="196" textAnchor="middle" fontSize="9.5" fontWeight={600} fill="#16302B">Sultan Bathery HSS</text>
-
-          <g transform="translate(470 96)">
-            <path d="M0 -9 C5 -9 8 -5 8 0 C8 6 3 10 0 13 C-3 10 -8 6 -8 0 C-8 -5 -5 -9 0 -9Z" />
-            <circle r="2.4" fill="#fff" />
-          </g>
-          <text x="470" y="118" textAnchor="middle" fontSize="8.5" fill="#16302B" fillOpacity={0.75}>Kalpetta Shelter</text>
+          <text x="616" y="196" textAnchor="middle" fontSize="9.5" fontWeight={600} fill="#16302B">Main Relief Camp</text>
         </g>
       )}
 
-      {/* hospital marker */}
       {showHospitals && (
         <g transform="translate(430 232)">
           <rect x="-9" y="-9" width="18" height="18" rx="4" fill="#B8271F" />
           <path d="M0 -4.5 V4.5 M-4.5 0 H4.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          <text x="0" y="24" textAnchor="middle" fontSize="8.5" fill="#16302B" fillOpacity={0.75}>District Hospital</text>
+          <text x="0" y="24" textAnchor="middle" fontSize="8.5" fill="#16302B" fillOpacity={0.75}>Apex Hospital</text>
         </g>
       )}
 
-      <g opacity="0.55">
-        <rect x="18" y="18" width="120" height="20" rx="10" fill="#0F1F1C" fillOpacity="0.06" />
-        <text x="30" y="32" fontSize="9.5" fontWeight={600} fill="#16302B">Wayanad District</text>
+      <g opacity="0.75">
+        <rect x="18" y="18" width="145" height="22" rx="11" fill="#0F1F1C" fillOpacity="0.08" />
+        <text x="28" y="33" fontSize="9.5" fontWeight={600} fill="#16302B">🇮🇳 NDMA Grid · {region.name}</text>
       </g>
     </svg>
   );
 }
 
-function SidebarInner({ activeNav, setActiveNav, setSidebarOpen, onBack }: {
-  activeNav: string; setActiveNav: (v: string) => void; setSidebarOpen: (v: boolean) => void; onBack?: () => void;
+// ==========================================
+// 🧭 SIDEBAR COMPONENT
+// ==========================================
+function SidebarInner({
+  activeNav,
+  setActiveNav,
+  setSidebarOpen,
+  onBack,
+  currentRegion,
+  setCurrentRegion,
+}: {
+  activeNav: string;
+  setActiveNav: (v: string) => void;
+  setSidebarOpen: (v: boolean) => void;
+  onBack?: () => void;
+  currentRegion: IndianRegion;
+  setCurrentRegion: (r: IndianRegion) => void;
 }) {
   return (
     <>
-      <div className="relative px-5 pt-6 pb-5 border-b border-white/10 overflow-hidden">
+      <div className="relative px-5 pt-6 pb-4 border-b border-white/10 overflow-hidden">
         <div className="ss-contours absolute inset-0 pointer-events-none" />
         <div className="relative flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #C97A1E, #E0952F)" }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: "linear-gradient(135deg, #C97A1E, #E0952F)" }}>
             <Icon name="shield" size={17} />
           </div>
           <div>
             <p className="ss-display text-white font-semibold text-[15px] leading-tight">SurakshaSetu</p>
-            <p className="text-white/45 text-[11px] mt-0.5">Wayanad, Kerala</p>
+            <p className="text-white/45 text-[11px] mt-0.5">National Disaster Grid · India</p>
           </div>
         </div>
+
+        {/* Pan-India Region Selector in Sidebar */}
+        <div className="relative mt-3.5">
+          <label className="text-[10px] uppercase font-bold tracking-wider text-white/40 block mb-1">Select Jurisdiction</label>
+          <select
+            value={currentRegion.id}
+            onChange={(e) => {
+              const r = REGIONS.find((x) => x.id === e.target.value);
+              if (r) setCurrentRegion(r);
+            }}
+            className="w-full bg-white/10 hover:bg-white/15 text-white text-xs rounded-lg px-2.5 py-1.5 border border-white/15 outline-none cursor-pointer"
+          >
+            {REGIONS.map((r) => (
+              <option key={r.id} value={r.id} className="bg-slate-900 text-white">
+                {r.name}, {r.state}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      {/* Nav List */}
       <nav className="flex-1 overflow-y-auto py-3 px-2.5 ss-scrollbar">
         {NAV_ITEMS.map((item) => {
           const active = activeNav === item.label;
@@ -315,13 +324,19 @@ function SidebarInner({ activeNav, setActiveNav, setSidebarOpen, onBack }: {
           );
         })}
       </nav>
+
+      {/* Emergency Hotline */}
       <div className="px-4 py-4 border-t border-white/10">
-        <a href="tel:112" className="ss-focus flex items-center justify-center gap-2 w-full text-white font-semibold text-sm py-2.5 rounded-lg transition-colors" style={{ background: "#B8271F" }}>
-          <Icon name="phone" size={16} /> Emergency 112
+        <a
+          href="tel:112"
+          className="ss-focus flex items-center justify-center gap-2 w-full text-white font-semibold text-sm py-2.5 rounded-lg transition-colors shadow-md"
+          style={{ background: "#B8271F" }}
+        >
+          <Icon name="phone" size={16} /> National Emergency 112
         </a>
         {onBack && (
           <button onClick={onBack} className="ss-focus mt-2.5 w-full text-[12px] text-white/40 hover:text-white/70 text-center py-1.5 transition-colors">
-            Back to Home
+            ← Exit to Portal
           </button>
         )}
       </div>
@@ -329,22 +344,53 @@ function SidebarInner({ activeNav, setActiveNav, setSidebarOpen, onBack }: {
   );
 }
 
+// ==========================================
+// 🏠 MAIN COMPONENT
+// ==========================================
 export const UserDashboard: FC<Props> = ({ onBack }) => {
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentRegion, setCurrentRegion] = useState<IndianRegion>(REGIONS[0]);
   const [activeFilter, setActiveFilter] = useState("All");
 
+  // State: Incident Report
   const [reportType, setReportType] = useState("");
   const [reportDesc, setReportDesc] = useState("");
   const [reportSubmitted, setReportSubmitted] = useState(false);
 
+  // State: Family Tracker
+  const [family, setFamily] = useState([
+    { id: 1, name: "Rajan (Father)", initials: "RK", status: "Safe", location: "Sector 4 Relief Camp", battery: "78%", lastSeen: "12 min ago" },
+    { id: 2, name: "Suma (Mother)", initials: "SK", status: "Safe", location: "Sector 4 Relief Camp", battery: "92%", lastSeen: "12 min ago" },
+    { id: 3, name: "Arjun (Brother)", initials: "AK", status: "Unknown", location: "Near District Market Area", battery: "24%", lastSeen: "1 hr ago" },
+  ]);
+  const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberRelation, setNewMemberRelation] = useState("");
+  const [showAddFamilyModal, setShowAddFamilyModal] = useState(false);
+
+  // State: Survival Checklist
+  const [survivalItems, setSurvivalItems] = useState([
+    { id: 1, text: "3-day supply of drinking water (4L per person/day)", checked: true },
+    { id: 2, text: "Non-perishable food (dry ration, glucose, nuts)", checked: true },
+    { id: 3, text: "Battery-powered radio / NOAA receiver & extra batteries", checked: false },
+    { id: 4, text: "Waterproof pouch with Aadhaar, Ration Card & Deeds", checked: true },
+    { id: 5, text: "First-aid kit with antiseptic, ORS sachets & prescriptions", checked: false },
+    { id: 6, text: "High-decibel whistle & emergency signaling torch", checked: false },
+  ]);
+
+  // State: Disaster Simulation Sandbox
+  const [simType, setSimType] = useState<"Flood" | "Landslide" | "Cyclone">("Flood");
+  const [rainfallMm, setRainfallMm] = useState<number>(140);
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  // State: Floating AI Assistant
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+  const [chatMessages, setChatMessages] = useState<Array<{ id: number; text: string; isBot: boolean; time: string }>>([
     {
       id: 1,
-      text: "Namaste! 🙏 Main SurakshaSetu AI assistant hoon. Wayanad safe shelters, evacuation routes ya weather alert ke baare me poochiye!",
+      text: "Namaste! 🙏 Main SurakshaSetu AI hoon. Bharat ke kisi bhi disaster zone ke safe shelters, relief routes, NDRF protocols ya family check-in ke baare me poochiye!",
       isBot: true,
       time: "Just now",
     },
@@ -362,26 +408,29 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
 
   function getBotReply(t: string): string {
     const l = t.toLowerCase();
-    if (l.includes("shelter") || l.includes("safe") || l.includes("place")) {
-      return "Wayanad me 14 shelters active hain:\n• Meppadi Relief Shelter (1.8 km)\n• Sultan Bathery Govt. School (18 km, capacity 800)";
+    if (l.includes("shelter") || l.includes("camp") || l.includes("safe place")) {
+      return `${currentRegion.name} me ${currentRegion.sheltersCount} verified relief shelters active hain. Nearest: Govt. Higher Secondary School Shelter. Water & Medical on site available hai.`;
     }
     if (l.includes("route") || l.includes("evacuate") || l.includes("road")) {
-      return "Evacuation ke liye NH-766 towards Sultan Bathery bilkul clear hai. Mundakkai-Chooralmala road avoid karein.";
+      return `Evacuation notice for ${currentRegion.name}: National Highway connect stretch clear hai. Low-lying riverbeds aur vulnerable steep slopes avoid karein.`;
     }
-    if (l.includes("weather") || l.includes("rain")) {
-      return "IMD Orange alert active hai. Agle 48 ghante me heavy rainfall expected hai. Slopes aur nadiyo se door rahein.";
+    if (l.includes("weather") || l.includes("rain") || l.includes("alert")) {
+      return `${currentRegion.name} bulletin: ${currentRegion.weatherCondition}. Alert level is currently ${currentRegion.alertLevel}. Follow SDMA broadcast.`;
     }
-    if (l.includes("family")) {
-      return "Family Status: Rajan & Suma safe hain Meppadi Relief Camp me. Arjun ki location check ki ja rahi hai.";
+    if (l.includes("family") || l.includes("bhai") || l.includes("father")) {
+      return "Aapke Family Safety tab me 2 members safe marked hain. Arjun ka battery low report hua hai. Emergency SOS bhejne ke liye 'My Family' tab use karein.";
     }
-    return "Surakshit sthan par rahein. Kisi bhi emergency mein 112 ya Ambulance ke liye 108 dial karein.";
+    if (l.includes("number") || l.includes("help") || l.includes("call")) {
+      return "National Helplines:\n• All-India Emergency: 112\n• NDRF Disaster Control: 011-24363260\n• NDMA Toll-free: 1078\n• Ambulance Service: 108";
+    }
+    return `Kripya calm rahein aur unche sthan par sharan lein. ${currentRegion.state} Disaster Authority official advisory follow karein. Kisi bhi tatkal sahayata ke liye 112 call karein.`;
   }
 
   function sendChat(overrideText?: string) {
     const text = (overrideText ?? chatInput).trim();
     if (!text) return;
 
-    const userMsg: ChatMessage = {
+    const userMsg = {
       id: Date.now(),
       text,
       isBot: false,
@@ -405,12 +454,30 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   function submitReport(e: FormEvent) {
     e.preventDefault();
     setReportSubmitted(true);
-    setTimeout(() => setReportSubmitted(false), 3000);
+    setTimeout(() => setReportSubmitted(false), 3500);
     setReportType("");
     setReportDesc("");
   }
 
-  const sp = { activeNav, setActiveNav, setSidebarOpen, onBack };
+  function addFamilyMember(e: FormEvent) {
+    e.preventDefault();
+    if (!newMemberName.trim()) return;
+    const newEntry = {
+      id: Date.now(),
+      name: `${newMemberName} (${newMemberRelation || "Relative"})`,
+      initials: newMemberName.slice(0, 2).toUpperCase(),
+      status: "Safe",
+      location: `Registered in ${currentRegion.name}`,
+      battery: "95%",
+      lastSeen: "Just now",
+    };
+    setFamily((prev) => [...prev, newEntry]);
+    setNewMemberName("");
+    setNewMemberRelation("");
+    setShowAddFamilyModal(false);
+  }
+
+  const sp = { activeNav, setActiveNav, setSidebarOpen, onBack, currentRegion, setCurrentRegion };
 
   return (
     <div className="ss-root relative flex h-screen overflow-hidden" style={{ background: "var(--paper)" }}>
@@ -421,8 +488,8 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
         <SidebarInner {...sp} />
       </aside>
 
-      {/* Sidebar Mobile */}
-      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/45 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      {/* Sidebar Mobile Drawer */}
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-64 flex flex-col lg:hidden transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{ background: "var(--ink)" }}
@@ -430,23 +497,30 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
         <SidebarInner {...sp} />
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-y-auto ss-scrollbar">
-        <header className="sticky top-0 z-20 px-5 py-3.5 flex items-center gap-3" style={{ background: "var(--paper-raised)", borderBottom: "1px solid var(--line)" }}>
-          <button className="ss-focus lg:hidden p-1.5 rounded text-[var(--ink)] hover:bg-black/5" onClick={() => setSidebarOpen(true)}>
-            <Icon name="menu" size={20} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="ss-display text-[17px] font-semibold leading-tight truncate">{activeNav}</h1>
-            <p className="text-[12px]" style={{ color: "var(--ink-60)" }}>Wayanad District, Kerala</p>
+      {/* Main Container */}
+      <main className="flex-1 overflow-y-auto ss-scrollbar flex flex-col">
+        {/* Sticky Header */}
+        <header className="sticky top-0 z-20 px-5 py-3.5 flex items-center justify-between gap-3 shadow-xs" style={{ background: "var(--paper-raised)", borderBottom: "1px solid var(--line)" }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <button className="ss-focus lg:hidden p-1.5 rounded text-[var(--ink)] hover:bg-black/5" onClick={() => setSidebarOpen(true)}>
+              <Icon name="menu" size={20} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="ss-display text-[17px] font-semibold leading-tight truncate">{activeNav}</h1>
+              <p className="text-[12px] flex items-center gap-1.5" style={{ color: "var(--ink-60)" }}>
+                <span>📍 {currentRegion.name}, {currentRegion.state}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded" style={{ background: "var(--paper)", border: "1px solid var(--line)" }}>Pan-India Enabled</span>
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2.5">
+
+          <div className="flex items-center gap-3">
             <span
               className="hidden sm:flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1 rounded-full"
               style={{ color: "var(--teal-deep)", background: "var(--teal-tint)" }}
             >
-              <span className="w-1.5 h-1.5 rounded-full ss-pulse-dot" style={{ background: "var(--teal)", animation: "ss-beacon-pulse 2.2s ease-in-out infinite" }} />
-              Live
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--teal)" }} />
+              Live Early Warning Network
             </span>
             <div className="w-8 h-8 rounded-full text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0" style={{ background: "var(--teal)" }}>
               RK
@@ -454,371 +528,786 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
         </header>
 
-        {activeNav === "Settings" ? (
-          <div className="p-4 sm:p-6 max-w-3xl mx-auto">
-            <div className="rounded-xl p-6" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-              <h2 className="ss-display text-lg font-semibold mb-1">Settings</h2>
-              <p className="text-sm mb-6" style={{ color: "var(--ink-60)" }}>Manage your SurakshaSetu preferences</p>
-              <div className="space-y-5">
-                <div className="flex items-center justify-between pb-4" style={{ borderBottom: "1px solid var(--line)" }}>
-                  <div>
-                    <p className="text-sm font-semibold">Emergency Notifications</p>
-                    <p className="text-xs mt-1" style={{ color: "var(--ink-60)" }}>Receive alerts about nearby hazards.</p>
-                  </div>
-                  <button className="ss-focus text-white px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "var(--teal)" }}>ON</button>
-                </div>
+        {/* Dynamic Nav View Rendering */}
+        <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-1">
+          {/* =========================================================
+              VIEW 1: SAFE PLACES
+             ========================================================= */}
+          {activeNav === "Safe Places" ? (
+            <div className="space-y-5 ss-animate-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <label className="text-sm font-semibold">Language</label>
-                  <select className="ss-focus mt-2 w-full rounded-lg px-3 py-2 text-sm" style={{ border: "1px solid var(--line)" }}>
-                    <option>English</option><option>Hindi</option><option>Malayalam</option>
-                  </select>
+                  <h2 className="ss-display text-2xl font-semibold">Designated Safe Shelters & Camps</h2>
+                  <p className="text-sm" style={{ color: "var(--ink-60)" }}>
+                    Verified shelters under District Disaster Management Authority ({currentRegion.name}, {currentRegion.state})
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: "var(--safe-tint)", color: "var(--safe)" }}>
+                    ✓ {currentRegion.sheltersCount} Verified Sites Active
+                  </span>
                 </div>
               </div>
-            </div>
-          </div>
-        ) : activeNav === "Safe Places" ? (
-          <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto">
-            <h2 className="ss-display text-2xl font-semibold">Safe Places</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[{ n: "Meppadi Relief Shelter", d: "1.8 km away" }, { n: "Government High School Shelter", d: "3.2 km away" }].map((x) => (
-                <div key={x.n} className="rounded-xl p-5" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-                  <h3 className="font-semibold">{x.n}</h3>
-                  <p className="text-sm mt-1" style={{ color: "var(--ink-60)" }}>{x.d}</p>
-                  <div className="mt-3"><Badge level="Safe" /></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
 
-            {/* Status strip — deliberately not four identical cards */}
-            <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-              <div className="grid grid-cols-2 lg:grid-cols-4 divide-y divide-x lg:divide-y-0" style={{ borderColor: "var(--line)" }}>
-                <div className="p-4">
-                  <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "var(--ink-40)" }}>Your safety status</p>
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--safe-tint)", color: "var(--safe)" }}><Icon name="shield" size={18} /></span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { name: "Government HSS Relief Centre", distance: "1.4 km", cap: "420 / 600", status: "Open", medical: true, food: true, water: true },
+                  { name: "Community Centre & Civil Hall", distance: "2.8 km", cap: "180 / 300", status: "Open", medical: true, food: true, water: true },
+                  { name: "Apex Multi-Purpose Cyclone/Flood Shelter", distance: "4.1 km", cap: "510 / 800", status: "Open", medical: true, food: true, water: true },
+                  { name: "District Sports Indoor Complex", distance: "6.5 km", cap: "210 / 500", status: "Open", medical: false, food: true, water: true },
+                  { name: "St. Thomas Relief Campus", distance: "7.9 km", cap: "290 / 400", status: "Open", medical: true, food: true, water: true },
+                  { name: "State Polytechnic Annex Ward", distance: "9.2 km", cap: "310 / 450", status: "Open", medical: true, food: true, water: true },
+                ].map((s) => (
+                  <div key={s.name} className="rounded-xl p-5 flex flex-col justify-between" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
                     <div>
-                      <p className="ss-display text-lg font-semibold leading-none">Safe</p>
-                      <p className="text-[11px] mt-1" style={{ color: "var(--ink-40)" }}>verified 5 min ago</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "var(--ink-40)" }}>Current location</p>
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--teal-tint)", color: "var(--teal-deep)" }}><Icon name="pin" size={18} /></span>
-                    <div>
-                      <p className="text-sm font-semibold leading-none">Meppadi</p>
-                      <p className="text-[11px] mt-1" style={{ color: "var(--ink-40)" }}>Wayanad, Kerala</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "var(--ink-40)" }}>Weather</p>
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--amber-tint)", color: "var(--amber)" }}><Icon name="droplet" size={18} /></span>
-                    <div>
-                      <p className="text-sm font-semibold leading-none">Heavy rain</p>
-                      <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--amber)" }}>IMD Orange Alert</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4" style={{ background: "var(--danger-tint)" }}>
-                  <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "#8C1B15" }}>Risk level</p>
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "#F6D9D5", color: "var(--danger)" }}><Icon name="warning" size={18} /></span>
-                    <div>
-                      <p className="ss-display text-lg font-semibold leading-none" style={{ color: "var(--danger)" }}>High</p>
-                      <p className="text-[11px] mt-1" style={{ color: "#8C1B15" }}>Landslide zone nearby</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Alerts */}
-            <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-              <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
-                <h2 className="ss-display text-[14.5px] font-semibold">Active Alerts</h2>
-                <button onClick={() => setActiveNav("Alerts")} className="ss-focus text-xs font-medium" style={{ color: "var(--teal-deep)" }}>View all</button>
-              </div>
-              <ul className="divide-y" style={{ borderColor: "var(--line)" }}>
-                {ALERTS.map((a, i) => {
-                  const s = SEVERITY_STYLE[a.severity];
-                  return (
-                    <li key={i} className="flex items-center gap-3 px-4 sm:px-5 py-3" style={{ borderLeft: `3px solid ${s.dot}` }}>
-                      <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: s.bg, color: s.text }}>
-                        <Icon name={a.icon} size={15} />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{a.type}</p>
-                        <p className="ss-num text-[11.5px]" style={{ color: "var(--ink-40)" }}>{a.distance} · {a.time}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-[15px] leading-tight">{s.name}</h3>
+                        <Badge level={s.status} />
                       </div>
-                      <Badge level={a.severity} />
-                      <button className="ss-focus text-xs font-medium hidden sm:block" style={{ color: "var(--teal-deep)" }}>View</button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            {/* Illustrated hazard map */}
-            <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-              <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between flex-wrap gap-2.5" style={{ borderBottom: "1px solid var(--line)" }}>
-                <h2 className="ss-display text-[14.5px] font-semibold">Live Hazard &amp; Safety Map</h2>
-                <div className="flex gap-1.5 flex-wrap">
-                  {MAP_FILTERS.map((f) => {
-                    const on = activeFilter === f;
-                    return (
-                      <button
-                        key={f}
-                        onClick={() => setActiveFilter(f)}
-                        className="ss-focus text-[11.5px] px-3 py-1 rounded-full font-medium transition-colors"
-                        style={on ? { background: "var(--teal)", color: "#fff" } : { background: "transparent", color: "var(--ink-60)", border: "1px solid var(--line)" }}
-                      >
-                        {f}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="p-3 sm:p-4">
-                <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--line)" }}>
-                  <HazardMap filter={activeFilter} />
-                </div>
-                <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3 text-[11px]" style={{ color: "var(--ink-60)" }}>
-                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "var(--danger)" }} />Red zone</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "var(--safe)" }} />Shelter</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "var(--teal)" }} />You are here</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 border-t border-dashed" style={{ borderColor: "var(--teal)" }} />Evacuation route</span>
-                </div>
+                      <p className="text-xs mt-1" style={{ color: "var(--ink-60)" }}>📍 {s.distance} from your location</p>
+                      <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--line)" }}>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span style={{ color: "var(--ink-60)" }}>Occupancy</span>
+                          <span className="font-semibold">{s.cap}</span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                          <div className="h-1.5 rounded-full" style={{ width: "70%", background: "var(--teal)" }} />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3 text-[11px]">
+                        {s.medical && <span className="px-2 py-0.5 rounded" style={{ background: "var(--paper)" }}>🏥 Medical Unit</span>}
+                        {s.food && <span className="px-2 py-0.5 rounded" style={{ background: "var(--paper)" }}>🍲 Cooked Food</span>}
+                        {s.water && <span className="px-2 py-0.5 rounded" style={{ background: "var(--paper)" }}>💧 Potable Water</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => alert(`Directions to ${s.name} initiated via GPS coordinates.`)}
+                      className="ss-focus mt-4 w-full py-2.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                      style={{ background: "var(--teal)" }}
+                    >
+                      Navigate to Shelter
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
-
-            {/* Settlements + Relocation */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-                <div className="px-4 sm:px-5 py-3.5" style={{ borderBottom: "1px solid var(--line)" }}>
-                  <h2 className="ss-display text-[14.5px] font-semibold">High-Risk Settlements</h2>
+          ) : activeNav === "Alerts" ? (
+            /* =========================================================
+               VIEW 2: ALERTS (PAN-INDIA WARNING BULLETIN)
+               ========================================================= */
+            <div className="space-y-5 ss-animate-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="ss-display text-2xl font-semibold">Active Early Warnings & Dispatches</h2>
+                  <p className="text-sm" style={{ color: "var(--ink-60)" }}>
+                    National Disaster Management Authority (NDMA) &amp; IMD Unified Alerts
+                  </p>
                 </div>
-                <ul className="divide-y" style={{ borderColor: "var(--line)" }}>
-                  {SETTLEMENTS.map((s, i) => (
-                    <li key={i} className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "var(--paper)", color: "var(--ink-60)" }}>
-                          <Icon name="users" size={15} />
+                <button
+                  onClick={() => alert("Simulating Emergency Siren Alert Broadcast")}
+                  className="ss-focus flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold text-white shadow-xs"
+                  style={{ background: "var(--danger)" }}
+                >
+                  <Icon name="volume" size={15} /> Play Siren Test
+                </button>
+              </div>
+
+              <div className="space-y-3.5">
+                {[
+                  {
+                    type: "Severe Flash Flood & Inundation Warning",
+                    agency: "Central Water Commission (CWC) & IMD",
+                    severity: "Critical",
+                    zone: `${currentRegion.name}, ${currentRegion.state}`,
+                    time: "14 mins ago",
+                    desc: "Water levels rising above Danger Level (+1.8m). Low-lying residents instructed to proceed towards designated shelters immediately.",
+                  },
+                  {
+                    type: "Steep Slope Landslide Threat",
+                    agency: "Geological Survey of India (GSI)",
+                    severity: "High",
+                    zone: "Catchment sectors, Hill Slopes",
+                    time: "48 mins ago",
+                    desc: "Pore-pressure saturation reached 92%. NH link roads under surveillance. Heavy transport strictly suspended.",
+                  },
+                  {
+                    type: "High-Velocity Squall & Power Grid Advisory",
+                    agency: "State Disaster Management Authority (SDMA)",
+                    severity: "Moderate",
+                    zone: "District-wide electricity feeder lines",
+                    time: "2 hours ago",
+                    desc: "Sustained winds 55-70 km/h expected. Unanchored roof sheets and tree branches may cause interruptions.",
+                  },
+                  {
+                    type: "General Public Precaution Advisory",
+                    agency: "District Administration",
+                    severity: "Low",
+                    zone: "Urban Municipal Wards",
+                    time: "4 hours ago",
+                    desc: "Keep emergency torches charged and family documents in sealed waterproof pouches.",
+                  },
+                ].map((alert, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-xl p-5 transition-all"
+                    style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "var(--danger-tint)", color: "var(--danger)" }}>
+                          <Icon name="warning" size={16} />
                         </span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{s.name}</p>
-                          <p className="ss-num text-[11.5px]" style={{ color: "var(--ink-40)" }}>{s.exposed.toLocaleString()} residents</p>
-                        </div>
-                      </div>
-                      <Badge level={s.risk} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="rounded-xl overflow-hidden" style={{ background: "var(--ink)", color: "#fff" }}>
-                <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                  <h2 className="ss-display text-[14.5px] font-semibold">Recommended Relocation Site</h2>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "rgba(52,114,74,0.28)", color: "#8FD3A6" }}>Open</span>
-                </div>
-                <div className="p-4 sm:p-5 space-y-4">
-                  <div>
-                    <p className="ss-display text-[15px] font-semibold">Sultan Bathery Govt. HSS</p>
-                    <p className="text-[12px] text-white/50">18 km away</p>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[11.5px] text-white/55 mb-1.5">
-                      <span>Capacity</span><span className="ss-num">520 / 800</span>
-                    </div>
-                    <div className="w-full rounded-full h-1.5" style={{ background: "rgba(255,255,255,0.12)" }}>
-                      <div className="h-1.5 rounded-full" style={{ width: "65%", background: "#C97A1E" }} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5 text-[12px]">
-                    {[
-                      { l: "Food", v: "Available", ok: true, icon: "utensils" },
-                      { l: "Medical", v: "On-site", ok: true, icon: "cross" },
-                      { l: "Water", v: "Available", ok: true, icon: "droplet" },
-                      { l: "Transport", v: "Limited", ok: false, icon: "truck" },
-                    ].map((x) => (
-                      <div key={x.l} className="rounded-lg p-2.5 flex items-center gap-2" style={{ background: "rgba(255,255,255,0.05)" }}>
-                        <span style={{ color: x.ok ? "#8FD3A6" : "#E5B072" }}><Icon name={x.icon} size={14} /></span>
                         <div>
-                          <p className="text-white/45 text-[10.5px] leading-none">{x.l}</p>
-                          <p className="font-semibold mt-0.5" style={{ color: x.ok ? "#8FD3A6" : "#E5B072" }}>{x.v}</p>
+                          <h3 className="font-semibold text-sm sm:text-base">{alert.type}</h3>
+                          <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>Source: {alert.agency} · {alert.time}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Route timeline — genuinely sequential, so numbering/line is justified */}
-            <div className="rounded-xl p-4 sm:p-5" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <h2 className="ss-display text-[14.5px] font-semibold">Safe Relocation Route</h2>
-                <div className="flex items-center gap-3">
-                  <button className="ss-focus text-white text-[13px] font-semibold px-4 py-2 rounded-lg" style={{ background: "var(--teal)" }}>Get Directions</button>
-                  <button className="ss-focus text-[12.5px] font-medium" style={{ color: "var(--teal-deep)" }}>Alternative route</button>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-start gap-0">
-                {ROUTE_STOPS.map((stop, i) => (
-                  <div key={stop.label} className="flex sm:flex-col items-start sm:items-stretch gap-3 sm:flex-1 relative">
-                    <div className="flex sm:flex-col items-center sm:w-full">
-                      <span
-                        className="w-3 h-3 rounded-full flex-shrink-0 z-10"
-                        style={{
-                          background: stop.state === "danger" ? "var(--danger)" : stop.state === "target" ? "var(--teal)" : "var(--ink-40)",
-                        }}
-                      />
-                      {i < ROUTE_STOPS.length - 1 && (
-                        <span className="hidden sm:block flex-1 h-px w-full mt-1.5" style={{ background: "var(--line)" }} />
-                      )}
-                      {i < ROUTE_STOPS.length - 1 && (
-                        <span className="sm:hidden w-px flex-1 self-stretch mx-[5.5px]" style={{ background: "var(--line)", minHeight: "20px" }} />
-                      )}
+                      <Badge level={alert.severity} />
                     </div>
-                    <div className="pb-4 sm:pb-0 sm:mt-2.5">
-                      <p className="text-[13px] font-semibold">{stop.label}</p>
-                      <p className="text-[11.5px]" style={{ color: stop.state === "danger" ? "var(--danger)" : "var(--ink-40)" }}>{stop.sub}</p>
+                    <p className="text-xs sm:text-sm mt-3 pl-10" style={{ color: "var(--ink-60)" }}>{alert.desc}</p>
+                    <div className="mt-3.5 pl-10 flex flex-wrap gap-2 text-xs">
+                      <span className="px-2.5 py-1 rounded font-medium" style={{ background: "var(--paper)" }}>📍 {alert.zone}</span>
+                      <button
+                        onClick={() => alert("Protocol shared via WhatsApp/SMS to local contacts.")}
+                        className="ss-focus text-xs font-semibold hover:underline"
+                        style={{ color: "var(--teal)" }}
+                      >
+                        Share Alert Bulletin →
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Report Incident + My Family */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-                <div className="px-4 sm:px-5 py-3.5" style={{ borderBottom: "1px solid var(--line)" }}>
-                  <h2 className="ss-display text-[14.5px] font-semibold">Report an Incident</h2>
-                </div>
-                <form onSubmit={submitReport} className="p-4 sm:p-5 space-y-3.5">
-                  {reportSubmitted && (
-                    <div className="text-[12.5px] rounded-lg px-3 py-2" style={{ background: "var(--safe-tint)", color: "var(--safe)" }}>
-                      Report submitted — thank you for keeping the district informed.
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-[12px] font-medium mb-1.5 block" style={{ color: "var(--ink-60)" }}>Incident type</label>
-                    <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="ss-focus w-full rounded-lg px-3 py-2.5 text-sm" style={{ border: "1px solid var(--line)" }} required>
-                      <option value="">Select type</option>
-                      <option>Landslide</option><option>Flash Flood</option><option>Road Blocked</option><option>Person Missing</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-medium mb-1.5 block" style={{ color: "var(--ink-60)" }}>Description</label>
-                    <textarea
-                      value={reportDesc}
-                      onChange={(e) => setReportDesc(e.target.value)}
-                      rows={3}
-                      placeholder="Describe what you observed"
-                      className="ss-focus w-full rounded-lg px-3 py-2.5 text-sm resize-none"
-                      style={{ border: "1px solid var(--line)" }}
-                      required
-                    />
-                  </div>
-                  <button type="submit" className="ss-focus w-full text-white font-semibold text-sm py-2.5 rounded-lg" style={{ background: "var(--danger)" }}>
-                    Submit Report
-                  </button>
-                </form>
+          ) : activeNav === "Relocation" ? (
+            /* =========================================================
+               VIEW 3: RELOCATION & EVACUATION TRANSIT
+               ========================================================= */
+            <div className="space-y-5 ss-animate-in">
+              <div>
+                <h2 className="ss-display text-2xl font-semibold">Evacuation &amp; Transport Logistics</h2>
+                <p className="text-sm" style={{ color: "var(--ink-60)" }}>
+                  NDRF and State Transport relief shuttle corridors for {currentRegion.name}
+                </p>
               </div>
 
-              <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-                <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
-                  <h2 className="ss-display text-[14.5px] font-semibold">My Family</h2>
-                  <button className="ss-focus text-xs font-medium" style={{ color: "var(--teal-deep)" }}>+ Add</button>
-                </div>
-                <ul className="divide-y" style={{ borderColor: "var(--line)" }}>
-                  {FAMILY.map((f, i) => (
-                    <li key={i} className="px-4 sm:px-5 py-3 flex items-center gap-3">
-                      <div className="relative">
-                        <div className="w-9 h-9 rounded-full text-sm font-bold flex items-center justify-center" style={{ background: "var(--teal-tint)", color: "var(--teal-deep)" }}>
-                          {f.initials}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="rounded-xl p-5" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                    <h3 className="ss-display font-semibold text-base mb-3">Live Evacuation Transit Schedule</h3>
+                    <div className="space-y-3">
+                      {[
+                        { busId: "Relief Bus #04", route: "Meppadi Market → Sultan Bathery HSS", eta: "Departs in 15 mins", seats: "18 seats left", status: "Boarding" },
+                        { busId: "NDRF Shuttle #12", route: "River Ward Outpost → Apex Stadium Shelter", eta: "Departs in 35 mins", seats: "24 seats left", status: "En Route" },
+                        { busId: "Relief Bus #09", route: "High School Junction → Civil Hall", eta: "Departs in 1 hr", seats: "32 seats left", status: "Scheduled" },
+                      ].map((bus) => (
+                        <div key={bus.busId} className="p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ background: "var(--paper)" }}>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs" style={{ color: "var(--teal-deep)" }}>{bus.busId}</span>
+                              <Badge level="Safe" />
+                            </div>
+                            <p className="text-xs font-medium mt-1">{bus.route}</p>
+                            <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>{bus.eta} · {bus.seats}</p>
+                          </div>
+                          <button
+                            onClick={() => alert(`Seat requested for ${bus.busId}. Your boarding SMS code will arrive shortly.`)}
+                            className="ss-focus px-3 py-1.5 rounded-lg text-xs font-semibold text-white whitespace-nowrap"
+                            style={{ background: "var(--teal)" }}
+                          >
+                            Reserve Transit Seat
+                          </button>
                         </div>
-                        <span
-                          className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
-                          style={{ borderColor: "var(--paper-raised)", background: f.status === "Safe" ? "var(--safe)" : "var(--amber)" }}
-                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl p-5" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                    <h3 className="ss-display font-semibold text-base mb-2">Corridor Safety Status</h3>
+                    <div className="space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between p-2.5 rounded" style={{ background: "var(--safe-tint)", color: "var(--safe)" }}>
+                        <span>🛣️ National Highway link (Sector A to East)</span>
+                        <span className="font-bold">100% Clear &amp; Escorted</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{f.name}</p>
-                        <p className="text-[11.5px] truncate" style={{ color: "var(--ink-40)" }}>{f.location}</p>
+                      <div className="flex items-center justify-between p-2.5 rounded" style={{ background: "var(--danger-tint)", color: "var(--danger)" }}>
+                        <span>⚠️ Valley Bypass Bridge (Sector C)</span>
+                        <span className="font-bold">Submerged - Completely Closed</span>
                       </div>
-                      <Badge level={f.status} />
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl p-5 flex flex-col justify-between" style={{ background: "var(--ink)", color: "#fff" }}>
+                  <div>
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full uppercase" style={{ background: "rgba(201,122,30,0.3)", color: "#E0952F" }}>
+                      Offline Evacuation Guide
+                    </span>
+                    <h3 className="ss-display font-semibold text-lg mt-3">Download Offline Evacuation Map</h3>
+                    <p className="text-xs text-white/65 mt-2 leading-relaxed">
+                      Mobile towers may lose power during severe cyclones and flash floods. Save the route directions directly to your device storage.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => alert("Offline Relief Corridor Map (.pdf) downloaded to your device.")}
+                    className="ss-focus mt-6 flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-xs font-bold text-white shadow-md transition-opacity hover:opacity-95"
+                    style={{ background: "#C97A1E" }}
+                  >
+                    <Icon name="download" size={15} /> Save Offline Route Map
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Resources + Emergency Contacts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
-                <div className="px-4 sm:px-5 py-3.5" style={{ borderBottom: "1px solid var(--line)" }}>
-                  <h2 className="ss-display text-[14.5px] font-semibold">Resources</h2>
+          ) : activeNav === "My Family" ? (
+            /* =========================================================
+               VIEW 4: MY FAMILY (EMERGENCY CHECK-IN & TRACKER)
+               ========================================================= */
+            <div className="space-y-5 ss-animate-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="ss-display text-2xl font-semibold">Family Safety Roster</h2>
+                  <p className="text-sm" style={{ color: "var(--ink-60)" }}>
+                    Real-time safety status and GPS check-ins for your registered household
+                  </p>
                 </div>
-                <ul className="divide-y" style={{ borderColor: "var(--line)" }}>
-                  {RESOURCES.map((r, i) => (
-                    <li key={i}>
-                      <button className="ss-focus w-full flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-black/[0.02] text-left transition-colors">
-                        <span style={{ color: "var(--teal-deep)" }}><Icon name={r.icon} size={17} /></span>
-                        <span className="text-sm font-medium">{r.label}</span>
-                        <span className="ml-auto" style={{ color: "var(--ink-40)" }}>→</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => alert("Safety confirmation broadcasted to District Control Room & Family SMS roster.")}
+                    className="ss-focus px-3.5 py-2 rounded-lg text-xs font-semibold text-white shadow-xs"
+                    style={{ background: "var(--safe)" }}
+                  >
+                    ✓ I Am Safe (One-Tap Check-In)
+                  </button>
+                  <button
+                    onClick={() => setShowAddFamilyModal(true)}
+                    className="ss-focus px-3.5 py-2 rounded-lg text-xs font-semibold text-white shadow-xs"
+                    style={{ background: "var(--teal)" }}
+                  >
+                    + Add Member
+                  </button>
+                </div>
               </div>
 
-              <div className="rounded-xl p-4 sm:p-5 flex flex-col justify-between" style={{ background: "var(--ink)" }}>
-                <div>
-                  <p className="text-[11.5px] font-semibold text-white/45 mb-3">Emergency Contacts</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { l: "Police 112", h: "tel:112" },
-                      { l: "NDMA", h: "tel:18001807188" },
-                      { l: "SDMA Kerala", h: "tel:1070" },
-                      { l: "NDRF", h: "tel:01124363260" },
-                      { l: "Ambulance 108", h: "tel:108" },
-                    ].map((x) => (
-                      <a
-                        key={x.l}
-                        href={x.h}
-                        className="ss-focus flex items-center gap-1.5 text-white text-[12px] font-medium px-3 py-2 rounded-full transition-colors"
-                        style={{ background: "rgba(255,255,255,0.08)" }}
+              {/* Add Member Form Modal */}
+              {showAddFamilyModal && (
+                <div className="rounded-xl p-5 mb-4" style={{ background: "var(--paper-raised)", border: "2px solid var(--teal)" }}>
+                  <h3 className="ss-display font-semibold text-sm mb-3">Register New Family Member</h3>
+                  <form onSubmit={addFamilyMember} className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      placeholder="Full Name (e.g. Sneha)"
+                      value={newMemberName}
+                      onChange={(e) => setNewMemberName(e.target.value)}
+                      className="ss-focus flex-1 px-3 py-2 text-xs rounded-lg border"
+                      style={{ borderColor: "var(--line)" }}
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Relation (e.g. Sister)"
+                      value={newMemberRelation}
+                      onChange={(e) => setNewMemberRelation(e.target.value)}
+                      className="ss-focus px-3 py-2 text-xs rounded-lg border"
+                      style={{ borderColor: "var(--line)" }}
+                    />
+                    <button type="submit" className="ss-focus px-4 py-2 rounded-lg text-xs font-bold text-white" style={{ background: "var(--teal)" }}>
+                      Save Member
+                    </button>
+                    <button type="button" onClick={() => setShowAddFamilyModal(false)} className="px-3 py-2 text-xs font-semibold text-slate-500">
+                      Cancel
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {family.map((member) => (
+                  <div key={member.id} className="rounded-xl p-5" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full text-sm font-bold flex items-center justify-center text-white" style={{ background: "var(--teal)" }}>
+                          {member.initials}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm">{member.name}</h3>
+                          <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>Last Check-in: {member.lastSeen}</p>
+                        </div>
+                      </div>
+                      <Badge level={member.status} />
+                    </div>
+                    <div className="mt-4 pt-3 border-t text-xs space-y-1" style={{ borderColor: "var(--line)" }}>
+                      <p className="flex justify-between">
+                        <span style={{ color: "var(--ink-60)" }}>Location:</span>
+                        <span className="font-medium truncate max-w-[170px]">{member.location}</span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span style={{ color: "var(--ink-60)" }}>Phone Battery:</span>
+                        <span className="font-semibold">{member.battery}</span>
+                      </p>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => alert(`Pinging location of ${member.name}... GPS telemetry requested.`)}
+                        className="ss-focus flex-1 py-1.5 text-xs font-medium rounded-lg border text-center hover:bg-slate-50"
+                        style={{ borderColor: "var(--line)" }}
                       >
-                        <Icon name="phone" size={12} /> {x.l}
-                      </a>
+                        Ping Location
+                      </button>
+                      <button
+                        onClick={() => alert(`Sending automated SMS alert to ${member.name}'s phone.`)}
+                        className="ss-focus px-3 py-1.5 text-xs font-semibold rounded-lg text-white"
+                        style={{ background: "var(--teal)" }}
+                      >
+                        Send Alert
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : activeNav === "Resources" ? (
+            /* =========================================================
+               VIEW 5: RESOURCES & SURVIVAL KIT
+               ========================================================= */
+            <div className="space-y-5 ss-animate-in">
+              <div>
+                <h2 className="ss-display text-2xl font-semibold">Disaster Preparedness &amp; Survival Manuals</h2>
+                <p className="text-sm" style={{ color: "var(--ink-60)" }}>
+                  Verified safety toolkits, emergency checklists, and national response guidelines
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Survival Kit Checklist */}
+                <div className="rounded-xl p-5" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="ss-display font-semibold text-base">Emergency Go-Bag Checklist</h3>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: "var(--teal-tint)", color: "var(--teal-deep)" }}>
+                      {survivalItems.filter((x) => x.checked).length} of {survivalItems.length} Packed
+                    </span>
+                  </div>
+                  <p className="text-xs mb-4" style={{ color: "var(--ink-60)" }}>
+                    Essential items every household in vulnerable flood/landslide zones must have ready in a sealed bag.
+                  </p>
+                  <div className="space-y-2.5">
+                    {survivalItems.map((item) => (
+                      <label key={item.id} className="flex items-start gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-black/[0.02] transition-colors border" style={{ borderColor: "var(--line)" }}>
+                        <input
+                          type="checkbox"
+                          checked={item.checked}
+                          onChange={() => {
+                            setSurvivalItems((prev) =>
+                              prev.map((x) => (x.id === item.id ? { ...x, checked: !x.checked } : x))
+                            );
+                          }}
+                          className="mt-0.5 rounded text-teal-700 w-4 h-4 cursor-pointer"
+                        />
+                        <span className={`text-xs ${item.checked ? "line-through text-slate-400" : "font-medium"}`}>
+                          {item.text}
+                        </span>
+                      </label>
                     ))}
                   </div>
                 </div>
-                <p className="text-[11px] text-white/35 mt-4">24/7 toll-free disaster management helpline.</p>
+
+                {/* Guidelines Library */}
+                <div className="space-y-4">
+                  <div className="rounded-xl p-5" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                    <h3 className="ss-display font-semibold text-base mb-3">National Disaster Guidelines</h3>
+                    <div className="space-y-2.5">
+                      {[
+                        { title: "NDMA Standard Flood Safety Protocol", size: "1.8 MB PDF" },
+                        { title: "Landslide Early Warning Signs & Escarpment Guide", size: "2.4 MB PDF" },
+                        { title: "First-Aid for Waterborne Inundations & Snakebites", size: "950 KB PDF" },
+                        { title: "Drinking Water Purification in Relief Camps", size: "640 KB PDF" },
+                      ].map((doc) => (
+                        <div key={doc.title} className="flex items-center justify-between p-3 rounded-lg border hover:bg-slate-50 cursor-pointer" style={{ borderColor: "var(--line)" }}>
+                          <div>
+                            <p className="text-xs font-semibold">{doc.title}</p>
+                            <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>{doc.size} · Official Ministry Documentation</p>
+                          </div>
+                          <button onClick={() => alert(`Downloading: ${doc.title}`)} className="text-xs font-semibold" style={{ color: "var(--teal)" }}>
+                            Download
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl p-4 flex items-center justify-between" style={{ background: "var(--ink)", color: "#fff" }}>
+                    <div>
+                      <p className="font-semibold text-xs">Need an emergency volunteer team?</p>
+                      <p className="text-[11px] text-white/50 mt-0.5">Civil Defence &amp; Aapda Mitra community volunteers</p>
+                    </div>
+                    <a href="tel:1078" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: "var(--teal)" }}>
+                      Call 1078
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
+          ) : activeNav === "Disaster Simulation" ? (
+            /* =========================================================
+               VIEW 6: DISASTER SIMULATION SANDBOX (TACTILE & CREATIVE)
+               ========================================================= */
+            <div className="space-y-5 ss-animate-in">
+              <div>
+                <h2 className="ss-display text-2xl font-semibold">Tactile Disaster Impact Simulator</h2>
+                <p className="text-sm" style={{ color: "var(--ink-60)" }}>
+                  Simulate local rainfall, flash-flood thresholds, and safe evacuation radii for {currentRegion.name}
+                </p>
+              </div>
 
-            <div className="h-4" />
-          </div>
-        )}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="rounded-xl p-5 space-y-4" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                  <h3 className="ss-display font-semibold text-base">Simulation Parameters</h3>
+
+                  <div>
+                    <label className="text-xs font-semibold block mb-2" style={{ color: "var(--ink-60)" }}>Select Hazard Model</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["Flood", "Landslide", "Cyclone"] as const).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setSimType(t)}
+                          className={`py-2 text-xs font-semibold rounded-lg border transition-all ${
+                            simType === t ? "text-white" : "hover:bg-slate-50"
+                          }`}
+                          style={simType === t ? { background: "var(--teal)", borderColor: "var(--teal)" } : { borderColor: "var(--line)" }}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold mb-1">
+                      <span>Monsoon Rainfall Intensity</span>
+                      <span className="font-bold" style={{ color: "var(--danger)" }}>{rainfallMm} mm/24h</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="40"
+                      max="320"
+                      step="10"
+                      value={rainfallMm}
+                      onChange={(e) => setRainfallMm(Number(e.target.value))}
+                      className="w-full cursor-pointer accent-teal-700"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                      <span>40 mm (Normal)</span>
+                      <span>150 mm (Warning)</span>
+                      <span>300+ mm (Extreme)</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t" style={{ borderColor: "var(--line)" }}>
+                    <button
+                      onClick={() => {
+                        setIsSimulating(true);
+                        setTimeout(() => setIsSimulating(false), 800);
+                      }}
+                      className="ss-focus w-full py-2.5 rounded-lg text-xs font-bold text-white shadow-md flex items-center justify-center gap-2"
+                      style={{ background: "var(--teal)" }}
+                    >
+                      <Icon name="simulation" size={16} />
+                      {isSimulating ? "Recalculating Models..." : "Run Hydrological Prediction"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 rounded-xl p-5 flex flex-col justify-between" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                  <div>
+                    <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: "var(--line)" }}>
+                      <h3 className="ss-display font-semibold text-base">Predicted Impact Radius &amp; Casualties</h3>
+                      <Badge level={rainfallMm > 200 ? "Critical" : rainfallMm > 110 ? "High" : "Moderate"} />
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                      <div className="p-3 rounded-lg" style={{ background: "var(--paper)" }}>
+                        <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>Inundation Level</p>
+                        <p className="text-xl font-bold mt-1 ss-num" style={{ color: "var(--danger)" }}>
+                          +{(rainfallMm * 0.016).toFixed(1)} m
+                        </p>
+                        <p className="text-[10px] text-slate-500">Above road crest</p>
+                      </div>
+                      <div className="p-3 rounded-lg" style={{ background: "var(--paper)" }}>
+                        <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>Exposed Population</p>
+                        <p className="text-xl font-bold mt-1 ss-num">
+                          {Math.round(rainfallMm * 14.5).toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-slate-500">Within 3 km contour</p>
+                      </div>
+                      <div className="p-3 rounded-lg col-span-2 sm:col-span-1" style={{ background: "var(--paper)" }}>
+                        <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>Safe Transit Buffer</p>
+                        <p className="text-xl font-bold mt-1 ss-num" style={{ color: "var(--safe)" }}>
+                          {Math.max(15, 60 - Math.round(rainfallMm * 0.15))} mins
+                        </p>
+                        <p className="text-[10px] text-slate-500">Before road inundation</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 p-3.5 rounded-xl border" style={{ borderColor: "var(--line)", background: "var(--paper)" }}>
+                      <p className="text-xs font-semibold mb-1">🤖 AI Automated Safety Recommendation:</p>
+                      <p className="text-xs leading-relaxed" style={{ color: "var(--ink-60)" }}>
+                        {rainfallMm > 200
+                          ? `Extreme flood runoff imminent in ${currentRegion.name}. All valley routes must be evacuated within the next 20 minutes. Proceed towards Sultan Bathery Shelter.`
+                          : rainfallMm > 110
+                          ? `Moderate saturation threshold reached. Slopes over 30 degrees have a 68% slippage probability. Avoid underpasses and river bridges.`
+                          : `Normal monsoon capacity. Drains are currently running at safe velocity. Continue monitoring IMD bulletins.`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t flex items-center justify-between text-xs" style={{ borderColor: "var(--line)" }}>
+                    <span style={{ color: "var(--ink-40)" }}>Model: NDMA Indian Hydro-Morphology v4.2</span>
+                    <button
+                      onClick={() => alert("Simulation report generated and sent to offline logs.")}
+                      className="font-semibold hover:underline"
+                      style={{ color: "var(--teal)" }}
+                    >
+                      Export Model Report →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : activeNav === "Settings" ? (
+            /* =========================================================
+               VIEW 7: SETTINGS
+               ========================================================= */
+            <div className="max-w-2xl mx-auto rounded-xl p-6 ss-animate-in" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+              <h2 className="ss-display text-lg font-semibold mb-1">Preferences &amp; Pan-India Configuration</h2>
+              <p className="text-sm mb-6" style={{ color: "var(--ink-60)" }}>Customize emergency notifications and regional protocols</p>
+              <div className="space-y-5">
+                <div className="flex items-center justify-between pb-4" style={{ borderBottom: "1px solid var(--line)" }}>
+                  <div>
+                    <p className="text-sm font-semibold">Disaster Alert Cell Broadcast</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--ink-60)" }}>Receive high-priority audio sirens during red alerts.</p>
+                  </div>
+                  <button className="ss-focus text-white px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "var(--teal)" }}>ON</button>
+                </div>
+                <div className="flex items-center justify-between pb-4" style={{ borderBottom: "1px solid var(--line)" }}>
+                  <div>
+                    <p className="text-sm font-semibold">Offline Map Caching</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--ink-60)" }}>Store topography and evacuation roads locally.</p>
+                  </div>
+                  <button className="ss-focus text-white px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "var(--teal)" }}>ON</button>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold">Language / भाषा / ഭാഷ</label>
+                  <select className="ss-focus mt-2 w-full rounded-lg px-3 py-2 text-sm" style={{ border: "1px solid var(--line)" }}>
+                    <option>English (India)</option>
+                    <option>Hindi (हिन्दी)</option>
+                    <option>Malayalam (മലയാളം)</option>
+                    <option>Odia (ଓଡ଼ିଆ)</option>
+                    <option>Bengali (বাংলা)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* =========================================================
+               VIEW 8: DEFAULT DASHBOARD
+               ========================================================= */
+            <div className="space-y-5 ss-animate-in">
+              {/* Top Status Strip */}
+              <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                <div className="grid grid-cols-2 lg:grid-cols-4 divide-y divide-x lg:divide-y-0" style={{ borderColor: "var(--line)" }}>
+                  <div className="p-4">
+                    <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "var(--ink-40)" }}>Safety Status</p>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--safe-tint)", color: "var(--safe)" }}>
+                        <Icon name="shield" size={18} />
+                      </span>
+                      <div>
+                        <p className="ss-display text-lg font-semibold leading-none">Safe</p>
+                        <p className="text-[11px] mt-1" style={{ color: "var(--ink-40)" }}>verified just now</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "var(--ink-40)" }}>Active Region</p>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--teal-tint)", color: "var(--teal-deep)" }}>
+                        <Icon name="pin" size={18} />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold leading-none">{currentRegion.name}</p>
+                        <p className="text-[11px] mt-1" style={{ color: "var(--ink-40)" }}>{currentRegion.state}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "var(--ink-40)" }}>Weather Report</p>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--amber-tint)", color: "var(--amber)" }}>
+                        <Icon name="droplet" size={18} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold leading-none truncate">{currentRegion.weatherCondition}</p>
+                        <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--amber)" }}>NDMA Advisory</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4" style={{ background: "var(--danger-tint)" }}>
+                    <p className="text-[11px] uppercase tracking-wide mb-2" style={{ color: "#8C1B15" }}>Threat Level</p>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "#F6D9D5", color: "var(--danger)" }}>
+                        <Icon name="warning" size={18} />
+                      </span>
+                      <div>
+                        <p className="ss-display text-lg font-semibold leading-none" style={{ color: "var(--danger)" }}>{currentRegion.alertLevel}</p>
+                        <p className="text-[11px] mt-1" style={{ color: "#8C1B15" }}>{currentRegion.hazardType}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Hazard & Safety Map */}
+              <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between flex-wrap gap-2.5" style={{ borderBottom: "1px solid var(--line)" }}>
+                  <h2 className="ss-display text-[14.5px] font-semibold">Live Hazard &amp; Safety Map ({currentRegion.name})</h2>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {["All", "Hazards", "Safe Sites", "Shelters", "Hospitals"].map((f) => {
+                      const on = activeFilter === f;
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => setActiveFilter(f)}
+                          className="ss-focus text-[11.5px] px-3 py-1 rounded-full font-medium transition-colors"
+                          style={on ? { background: "var(--teal)", color: "#fff" } : { background: "transparent", color: "var(--ink-60)", border: "1px solid var(--line)" }}
+                        >
+                          {f}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="p-3 sm:p-4">
+                  <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--line)" }}>
+                    <HazardMap filter={activeFilter} region={currentRegion} />
+                  </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3 text-[11px]" style={{ color: "var(--ink-60)" }}>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "var(--danger)" }} />Red zone</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "var(--safe)" }} />Relief Shelter</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: "var(--teal)" }} />Your point</span>
+                    <span className="flex items-center gap-1.5"><span className="w-3 border-t border-dashed" style={{ borderColor: "var(--teal)" }} />Evacuation route</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Incident Reporting & Family Snapshot */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                  <div className="px-4 sm:px-5 py-3.5" style={{ borderBottom: "1px solid var(--line)" }}>
+                    <h2 className="ss-display text-[14.5px] font-semibold">Report Incident to District Control</h2>
+                  </div>
+                  <form onSubmit={submitReport} className="p-4 sm:p-5 space-y-3.5">
+                    {reportSubmitted && (
+                      <div className="text-[12.5px] rounded-lg px-3 py-2" style={{ background: "var(--safe-tint)", color: "var(--safe)" }}>
+                        ✓ Incident report logged into National Disaster Response Database.
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-[12px] font-medium mb-1.5 block" style={{ color: "var(--ink-60)" }}>Incident Type</label>
+                      <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="ss-focus w-full rounded-lg px-3 py-2 text-xs" style={{ border: "1px solid var(--line)" }} required>
+                        <option value="">Select hazard type</option>
+                        <option>Flash Flood / Inundation</option>
+                        <option>Landslide / Mudslip</option>
+                        <option>Road Blocked / Fallen Tree</option>
+                        <option>Missing Person Emergency</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[12px] font-medium mb-1.5 block" style={{ color: "var(--ink-60)" }}>Location &amp; Observation Details</label>
+                      <textarea
+                        value={reportDesc}
+                        onChange={(e) => setReportDesc(e.target.value)}
+                        rows={3}
+                        placeholder="Describe severity, approximate landmark, and people affected"
+                        className="ss-focus w-full rounded-lg px-3 py-2 text-xs resize-none"
+                        style={{ border: "1px solid var(--line)" }}
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="ss-focus w-full text-white font-semibold text-xs py-2.5 rounded-lg" style={{ background: "var(--danger)" }}>
+                      Transmit Incident to NDRF / SDMA
+                    </button>
+                  </form>
+                </div>
+
+                <div className="rounded-xl overflow-hidden" style={{ background: "var(--paper-raised)", border: "1px solid var(--line)" }}>
+                  <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
+                    <h2 className="ss-display text-[14.5px] font-semibold">Family Safety Summary</h2>
+                    <button onClick={() => setActiveNav("My Family")} className="ss-focus text-xs font-semibold" style={{ color: "var(--teal)" }}>
+                      View All ({family.length}) →
+                    </button>
+                  </div>
+                  <ul className="divide-y" style={{ borderColor: "var(--line)" }}>
+                    {family.slice(0, 3).map((f) => (
+                      <li key={f.id} className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center text-white flex-shrink-0" style={{ background: "var(--teal)" }}>
+                            {f.initials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">{f.name}</p>
+                            <p className="text-[11px]" style={{ color: "var(--ink-40)" }}>{f.location}</p>
+                          </div>
+                        </div>
+                        <Badge level={f.status} />
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="p-4 bg-slate-50 border-t" style={{ borderColor: "var(--line)" }}>
+                    <button
+                      onClick={() => setActiveNav("Disaster Simulation")}
+                      className="ss-focus w-full py-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-2 hover:bg-white transition-colors"
+                      style={{ borderColor: "var(--line)" }}
+                    >
+                      <Icon name="simulation" size={14} /> Open Impact Simulator
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="h-10" />
       </main>
 
-      {/* Floating AI assistant */}
-      <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 9999999, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+      {/* ========================================================================= */}
+      {/* 🤖 GLOBAL FLOATING CIRCULAR AI ASSISTANT (RIGHT BOTTOM CORNER)            */}
+      {/* ========================================================================= */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 9999999,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+        }}
+      >
+        {/* Floating Chat Popup Window */}
         {isAiOpen && (
           <div
-            style={{ width: 380, maxWidth: "calc(100vw - 32px)", height: 520, maxHeight: "calc(100vh - 120px)", boxShadow: "0 25px 50px -12px rgba(15,31,28,0.35)" }}
-            className="mb-4 rounded-2xl border flex flex-col overflow-hidden"
+            style={{
+              width: 380,
+              maxWidth: "calc(100vw - 32px)",
+              height: 520,
+              maxHeight: "calc(100vh - 120px)",
+              boxShadow: "0 25px 50px -12px rgba(15,31,28,0.35)",
+            }}
+            className="mb-4 rounded-2xl border flex flex-col overflow-hidden ss-animate-in"
           >
+            {/* Header */}
             <div className="p-4 text-white flex items-center justify-between" style={{ background: "linear-gradient(120deg, #0E6B62, #0A4F48)" }}>
               <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
+                <div className="relative w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-white">
                   <Icon name="bot" size={19} />
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full" style={{ background: "#C97A1E", boxShadow: "0 0 0 2px #0A4F48" }} />
                 </div>
@@ -826,7 +1315,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                   <h3 className="ss-display font-semibold text-[13.5px] leading-tight">SurakshaSetu AI</h3>
                   <p className="text-[10.5px] text-white/70 flex items-center gap-1.5 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#C97A1E" }} />
-                    Online · 24/7 disaster support
+                    Pan-India 24/7 Disaster Support
                   </p>
                 </div>
               </div>
@@ -835,6 +1324,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </button>
             </div>
 
+            {/* Message Roster */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 ss-scrollbar" style={{ background: "var(--paper)" }}>
               {chatMessages.map((m) => (
                 <div key={m.id} className={`flex flex-col ${m.isBot ? "items-start" : "items-end"}`}>
@@ -874,8 +1364,9 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               <div ref={chatEndRef} />
             </div>
 
+            {/* Quick Chips */}
             <div className="px-3 py-2 flex gap-1.5 overflow-x-auto ss-scrollbar" style={{ background: "var(--paper-raised)", borderTop: "1px solid var(--line)" }}>
-              {["Nearest shelter", "Evacuation route", "Weather update"].map((chip) => (
+              {["Nearest shelter", "Evacuation route", "Helpline numbers"].map((chip) => (
                 <button
                   key={chip}
                   onClick={() => sendChat(chip)}
@@ -887,6 +1378,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               ))}
             </div>
 
+            {/* Input Bar */}
             <div className="p-3 flex items-center gap-2" style={{ background: "var(--paper-raised)", borderTop: "1px solid var(--line)" }}>
               <input
                 ref={chatInputRef}
@@ -894,7 +1386,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                placeholder="Ask about disaster safety, shelters..."
+                placeholder="Ask NDMA protocols, safe routes..."
                 className="ss-focus flex-1 rounded-xl px-3.5 py-2.5 text-[12.5px] placeholder:text-[var(--ink-40)]"
                 style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
               />
@@ -910,10 +1402,17 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
         )}
 
+        {/* 🔵 THE FLOATING CIRCLE AI BUTTON */}
         <button
           onClick={() => setIsAiOpen((prev) => !prev)}
-          style={{ width: 58, height: 58, borderRadius: "50%", background: "linear-gradient(135deg, #0E6B62, #0A4F48)", boxShadow: "0 10px 25px rgba(14,107,98,0.4)" }}
-          className="ss-focus ss-beacon relative text-white flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95"
+          style={{
+            width: 58,
+            height: 58,
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #0E6B62, #0A4F48)",
+            boxShadow: "0 10px 25px rgba(14,107,98,0.45)",
+          }}
+          className="ss-focus ss-beacon relative text-white flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-white"
           title={isAiOpen ? "Close AI Assistant" : "Open AI Assistant"}
           aria-label="AI Assistant"
         >
