@@ -57,13 +57,21 @@ const FAMILY: FamilyMember[] = [
   { name: "Suma (Mother)", initials: "SK", status: "Safe", location: "Meppadi Relief Camp" },
   { name: "Arjun (Brother)", initials: "AK", status: "Unknown", location: "Last seen Chooralmala" },
 ];
+
+// ==========================================
+// 📌 SIDEBAR NAV ITEMS ("Risk Areas" Removed)
+// ==========================================
 const NAV_ITEMS = [
-  { label: "Dashboard", icon: "home" }, { label: "Safe Places", icon: "shield" },
-  { label: "Alerts", icon: "bell" }, { label: "Risk Areas", icon: "warning" },
-  { label: "Relocation", icon: "bus" }, { label: "My Family", icon: "family" },
-  { label: "Resources", icon: "book" }, { label: "Disaster Simulation", icon: "simulation" },
+  { label: "Dashboard", icon: "home" },
+  { label: "Safe Places", icon: "shield" },
+  { label: "Alerts", icon: "bell" },
+  { label: "Relocation", icon: "bus" },
+  { label: "My Family", icon: "family" },
+  { label: "Resources", icon: "book" },
+  { label: "Disaster Simulation", icon: "simulation" },
   { label: "Settings", icon: "settings" },
 ];
+
 const MAP_FILTERS = ["All", "Hazards", "Safe Sites", "Shelters", "Hospitals"];
 const RESOURCES = [
   { icon: "report", label: "NDMA Evacuation Guidelines" },
@@ -120,7 +128,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
   const [reportSubmitted, setReportSubmitted] = useState(false);
 
   // ==========================================
-  // 🤖 FLOATING AI ASSISTANT STATE
+  // 🤖 FLOATING CIRCULAR AI ASSISTANT STATE
   // ==========================================
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -178,7 +186,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
     setChatInput("");
     setIsTyping(true);
 
-    // Realistic bot typing delay
+    // Realistic typing delay
     setTimeout(() => {
       const reply = getBotReply(text);
       setChatMessages(prev => [
@@ -216,7 +224,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
         <SidebarInner {...sp} />
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button className="lg:hidden p-1.5 rounded text-slate-600 hover:bg-slate-100" onClick={() => setSidebarOpen(true)}>
@@ -274,7 +282,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
         ) : (
           <div className="p-4 space-y-4 max-w-7xl mx-auto">
-            {/* Top Cards */}
+            {/* Top 4 Metrics Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
                 <p className="text-xs text-slate-500 font-medium mb-1">Safety Status</p>
@@ -298,7 +306,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Active Alerts */}
+            {/* Active Alerts Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-800">Active Alerts</h2>
@@ -393,7 +401,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* 🛑 DEKHIYE: YAHAN SE PURANA AI ASSISTANT WALA DABBA DELETE KAR DIYA HAI */}
+            {/* Report an Incident Form & My Family */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="px-4 py-3 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-800">Report an Incident</h2></div>
@@ -485,7 +493,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           alignItems: "flex-end",
         }}
       >
-        {/* Floating Chat Popup Window (Khulta hai jab circle click hota hai) */}
+        {/* Floating Chat Popup Window */}
         {isAiOpen && (
           <div
             style={{
@@ -495,9 +503,9 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               maxHeight: "calc(100vh - 120px)",
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
             }}
-            className="mb-4 bg-white rounded-3xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
+            className="mb-4 bg-white rounded-3xl border border-slate-200 flex flex-col overflow-hidden"
           >
-            {/* Popup Header */}
+            {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="relative w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white">
@@ -521,7 +529,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
               </button>
             </div>
 
-            {/* Popup Messages Body */}
+            {/* Messages Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/70">
               {chatMessages.map((m) => (
                 <div
@@ -599,7 +607,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
           </div>
         )}
 
-        {/* 🔵 THE FLOATING CIRCLE AI BUTTON (CLICK TO OPEN/CLOSE) */}
+        {/* 🔵 THE FLOATING CIRCLE AI BUTTON */}
         <button
           onClick={() => setIsAiOpen((prev) => !prev)}
           style={{
