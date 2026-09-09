@@ -347,6 +347,10 @@ function SidebarInner({
 // ==========================================
 // 🏠 MAIN COMPONENT
 // ==========================================
+interface Props {
+  onBack?: () => void;
+}
+
 export const UserDashboard: FC<Props> = ({ onBack }) => {
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -668,7 +672,7 @@ export const UserDashboard: FC<Props> = ({ onBack }) => {
                     <div className="mt-3.5 pl-10 flex flex-wrap gap-2 text-xs">
                       <span className="px-2.5 py-1 rounded font-medium" style={{ background: "var(--paper)" }}>📍 {alert.zone}</span>
                       <button
-                        onClick={() => alert("Protocol shared via WhatsApp/SMS to local contacts.")}
+                        onClick={() => window.alert("Protocol shared via WhatsApp/SMS to local contacts.")}
                         className="ss-focus text-xs font-semibold hover:underline"
                         style={{ color: "var(--teal)" }}
                       >
